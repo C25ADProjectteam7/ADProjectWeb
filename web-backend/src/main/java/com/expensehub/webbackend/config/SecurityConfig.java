@@ -29,14 +29,6 @@ public class SecurityConfig {
     }
 
     @Bean
-    public DaoAuthenticationProvider authenticationProvider(
-            UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
-        provider.setPasswordEncoder(passwordEncoder);
-        return provider;
-    }
-
-    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtUtil jwtUtil)
             throws Exception {
         http.csrf(csrf -> csrf.disable())
