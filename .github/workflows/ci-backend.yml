@@ -5,10 +5,12 @@ on:
     branches: [main, develop]
     paths:
       - 'web-backend/**'
+      - 'docker-compose.yml'
   push:
     branches: [main]
     paths:
       - 'web-backend/**'
+      - 'docker-compose.yml'
 
 defaults:
   run:
@@ -92,8 +94,8 @@ jobs:
         # high/critical 漏洞会让此步骤非零退出，job 失败，从而阻止合并
         # （需在分支保护规则中把本 job 设为 required status check）
 
-  # ---------- 3. 构建并推送 Docker 镜像（仅限 main 分支） ----------
-  docker-build-push:
+  # ---------- 3. 验证 Docker 镜像可构建（仅限 main 分支） ----------
+  docker-build:
     runs-on: ubuntu-latest
     needs: [build-and-test, security-scan]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -103,32 +105,26 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to container registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ secrets.REGISTRY_URL }}
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
-
-      - name: Build and push image
+      - name: Build image
         uses: docker/build-push-action@v6
         with:
           context: web-backend
-          push: true
-          tags: |
-            ${{ secrets.REGISTRY_URL }}/expense-hub-backend:latest
-            ${{ secrets.REGISTRY_URL }}/expense-hub-backend:${{ github.sha }}
+          push: false
+          tags: expense-hub-backend:ci-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   # ---------- 4. 部署到已配置好的服务器 ----------
   deploy:
     runs-on: ubuntu-latest
-    needs: docker-build-push
+    needs: docker-build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: production
+    concurrency:
+      group: expense-hub-production
+      cancel-in-progress: false
     steps:
-      - name: SSH deploy - pull latest image and restart
+      - name: SSH deploy - update source and rebuild backend
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -136,6 +132,6 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             cd /opt/expense-hub
-            docker compose pull web-backend
-            docker compose up -d web-backend
+            git pull --ff-only origin main
+            docker compose up -d --build web-backend
             docker compose ps

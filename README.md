@@ -49,15 +49,21 @@ docker compose up --build
 
 ### 两条独立的 CI/CD 流水线
 
-前后端各自一条流水线，按各自目录的文件变更触发（`paths: web-frontend/**` /
-`paths: web-backend/**`），互不阻塞：
+前后端各自一条流水线，按各自目录或 `docker-compose.yml` 的变更触发。部署 job 会串行执行，
+避免两条流水线同时在同一台服务器执行 `git pull` 和 Docker Compose：
 
 | | 前端 `ci-frontend.yml` | 后端 `ci-backend.yml` |
 |---|---|---|
 | build-and-test | npm ci → lint → format → vitest → vite build | mvn test（H2） → mvn package |
 | security-scan | SonarQube（JS/TS）+ Snyk（npm 依赖） | SonarQube（Java，含 JaCoCo 覆盖率）+ Snyk（Maven 依赖） |
-| docker-build-push | 构建 `expense-hub-web` 镜像并推送 | 构建 `expense-hub-backend` 镜像并推送 |
-| deploy | SSH 到服务器，`docker compose pull web-frontend && docker compose up -d web-frontend` | SSH 到服务器，`docker compose pull web-backend && docker compose up -d web-backend` |
+| docker-build | 验证 `expense-hub-web` Docker 镜像可构建 | 验证 `expense-hub-backend` Docker 镜像可构建 |
+| deploy | SSH 到服务器，拉取代码后执行 `docker compose up -d --build web-frontend` | SSH 到服务器，拉取代码后执行 `docker compose up -d --build web-backend` |
+
+此项目采用“服务器本地构建”部署方式，不推送镜像到 Docker Registry，因此**不需要**
+`REGISTRY_URL`、`REGISTRY_USERNAME` 或 `REGISTRY_PASSWORD`。服务器上的 `/opt/expense-hub`
+必须是仓库的 `main` 分支工作副本且具备 `git pull` 权限；生产环境变量应在服务器本地的 `.env`
+中配置。GitHub 只需配置部署用的 `DEPLOY_HOST`、`DEPLOY_USER` 和 `DEPLOY_SSH_KEY`（以及启用
+Snyk 扫描时的 `SNYK_TOKEN`）。
 
 两条流水线都遵循 backlog Item 28 的验收标准：**任何一步失败（构建/测试失败，或 SonarQube/Snyk
 发现 high/critical 级别问题）都会让对应 job 失败**。要让这个红叉真正拦住合并，需要在 GitHub
@@ -174,10 +180,10 @@ SonarLint、Docker、Vitest）。`.vscode/settings.json` 已配置保存时自�
 
 | Job                 | 触发条件                        | 作用                                                         |
 | ------------------- | ------------------------------- | ------------------------------------------------------------ |
-| `build-and-test`    | 每个 PR + push to main          | 装依赖、lint、格式检查、单元测试+覆盖率、生产构建            |
+| `build-and-test`    | 相关文件的 PR + push to main    | 装依赖、lint、格式检查、单元测试+覆盖率、生产构建            |
 | `security-scan`     | 依赖上一步                      | SonarQube 代码质量扫描 + Snyk 依赖漏洞扫描（high/critical 直接失败） |
-| `docker-build-push` | 仅 push to main，且前两步通过   | 构建 Docker 镜像并推送到镜像仓库                             |
-| `deploy`            | 仅 push to main，且镜像推送成功 | SSH 到已配置好的服务器，`docker compose pull <service> && docker compose up -d <service>` |
+| `docker-build`      | 仅 push to main，且前两步通过   | 验证 Docker 镜像能够构建                                     |
+| `deploy`            | 仅 push to main，且镜像构建成功 | SSH 到服务器，拉取代码后运行 `docker compose up -d --build <service>` |
 
 这对应 backlog 里 Item 28 的验收标准：**任何一步失败（构建失败、测试不过、或 Sonar/Snyk 发现
 high/critical 漏洞）都会让对应 job 标红，从而阻止合并**——前提是需要在 GitHub 仓库设置里把
@@ -206,4 +212,3 @@ docker run -p 8081:80 expense-hub-web
 
 生产镜像是多阶段构建：`node:20-alpine` 编译静态资源，最终只打包进 `nginx:1.27-alpine`，体积小、
 攻击面也小（这点 Snyk 扫描镜像时也会更容易过）。`nginx.conf` 里已处理好 React Router 的前端路由回退。
-
