@@ -32,6 +32,7 @@ dist/
 coverage/
 .vite/
 .cache/
+.npm-cache/
 .parcel-cache/
 .eslintcache
 *.tsbuildinfo
@@ -58,4 +59,3 @@ web-backend/src/main/resources/application-*.local.yaml
 # Local Docker Compose overrides
 docker-compose.override.yml
 docker-compose.local.yml
-
