@@ -100,6 +100,14 @@
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- Spring Boot 4 拆分了测试基础设施：MockMvc 自动配置（@AutoConfigureMockMvc 等）
+         现在由 spring-boot-webmvc-test 模块提供，spring-boot-starter-test 不再自动带上，
+         需要显式声明其配套的测试 starter，否则 HealthControllerTest 无法装配 MockMvc。 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webmvc-test</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-test</artifactId>
