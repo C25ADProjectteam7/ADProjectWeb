@@ -1,0 +1,9 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate # 生产环境不允许自动改表结构，配合数据库迁移工具（如 Flyway）使用
+    show-sql: false
+
+logging:
+  level:
+    root: INFO

@@ -1,0 +1,61 @@
+# Operating system
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment files (keep the committed .env.example template)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+*~
+
+# Node.js / Vite / test outputs
+node_modules/
+dist/
+coverage/
+.vite/
+.cache/
+.parcel-cache/
+.eslintcache
+*.tsbuildinfo
+
+# Java / Maven / Spring Boot
+target/
+*.class
+*.jar
+*.war
+*.ear
+!.mvn/wrapper/maven-wrapper.jar
+hs_err_pid*
+replay_pid*
+.factorypath
+.springBeans
+.sts4-cache/
+
+# Local Spring configuration overrides (shared profiles remain tracked)
+web-backend/src/main/resources/application-local.yml
+web-backend/src/main/resources/application-local.yaml
+web-backend/src/main/resources/application-*.local.yml
+web-backend/src/main/resources/application-*.local.yaml
+
+# Local Docker Compose overrides
+docker-compose.override.yml
+docker-compose.local.yml
+
