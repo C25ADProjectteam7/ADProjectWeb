@@ -27,6 +27,18 @@
     </sonar.coverage.jacoco.xmlReportPaths>
   </properties>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>4.0.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
     <!-- Snyk requires 2.21.4 or newer to remediate the jjwt-jackson transitively introduced CVE. -->
     <dependency>
