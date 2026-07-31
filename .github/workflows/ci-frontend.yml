@@ -64,6 +64,9 @@ jobs:
   security-scan:
     runs-on: ubuntu-latest
     needs: build-and-test
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -89,23 +92,18 @@ jobs:
       # 不会阻塞后面的部署。等 SonarQube 服务器就绪、在仓库 Secrets 里填好这两个值后，
       # 这两步会自动开始生效，不需要再改这个文件。
       - name: SonarQube Scan
-        if: ${{ secrets.SONAR_TOKEN != '' && secrets.SONAR_HOST_URL != '' }}
+        if: ${{ env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' }}
         uses: SonarSource/sonarqube-scan-action@v3
         with:
           projectBaseDir: web-frontend
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
       - name: SonarQube Quality Gate check
-        if: ${{ secrets.SONAR_TOKEN != '' && secrets.SONAR_HOST_URL != '' }}
+        if: ${{ env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' }}
         uses: SonarSource/sonarqube-quality-gate-action@v1
         timeout-minutes: 5
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       - name: SonarQube skipped notice
-        if: ${{ secrets.SONAR_TOKEN == '' || secrets.SONAR_HOST_URL == '' }}
+        if: ${{ env.SONAR_TOKEN == '' || env.SONAR_HOST_URL == '' }}
         run: echo "::notice::SONAR_TOKEN/SONAR_HOST_URL 尚未配置，本次跳过 SonarQube 扫描（临时状态，待 SonarQube 服务器就绪后配置 Secrets 即可自动启用）。"
 
       - name: Snyk dependency vulnerability scan
