@@ -138,7 +138,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
-            cd /opt/expense-hub
+            cd /home/huangqianer/ADprojectWeb
             git pull --ff-only origin main
             docker compose up -d --build web-backend
             docker compose ps
