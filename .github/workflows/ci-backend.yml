@@ -88,12 +88,16 @@ jobs:
         if: ${{ env.SONAR_TOKEN == '' || env.SONAR_HOST_URL == '' }}
         run: echo "::notice::SONAR_TOKEN/SONAR_HOST_URL 尚未配置，本次跳过 SonarQube 扫描（临时状态）。"
 
+      # Run the CLI on the GitHub runner so Maven uses the JDK configured above.
+      # The Docker-based snyk/actions/maven action receives the runner's JAVA_HOME,
+      # whose host path is invalid inside its container.
+      - name: Set up Snyk CLI
+        uses: snyk/actions/setup@master
+
       - name: Snyk dependency vulnerability scan (Maven)
-        uses: snyk/actions/maven@master
+        run: snyk test --severity-threshold=high --file=pom.xml
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high --file=web-backend/pom.xml
         # high/critical 漏洞会让此步骤非零退出，job 失败，从而阻止合并
         # （需在分支保护规则中把本 job 设为 required status check）
 

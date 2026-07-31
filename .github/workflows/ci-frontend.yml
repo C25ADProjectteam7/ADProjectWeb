@@ -113,7 +113,9 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --severity-threshold=high
+          # GitHub Actions do not apply defaults.run.working-directory to action steps.
+          # Point Snyk at the frontend manifest explicitly.
+          args: --file=web-frontend/package.json --severity-threshold=high
         # 依赖或代码存在 high/critical 漏洞时，此步骤会以非零状态退出，
         # 从而使该 job 失败，阻止 PR 合并（需在分支保护规则中设为必需检查）。
 
