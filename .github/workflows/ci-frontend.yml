@@ -6,11 +6,13 @@ on:
     paths:
       - 'web-frontend/**'
       - 'docker-compose.yml'
+      - '.github/workflows/ci-frontend.yml'
   push:
     branches: [main]
     paths:
       - 'web-frontend/**'
       - 'docker-compose.yml'
+      - '.github/workflows/ci-frontend.yml'
 
 defaults:
   run:
