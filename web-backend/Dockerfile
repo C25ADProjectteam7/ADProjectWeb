@@ -14,4 +14,4 @@ COPY --from=build /app/target/*.jar app.jar
 USER spring
 EXPOSE 8081
 HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://localhost:8081/api/health || exit 1
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=50.0", "-XX:InitialRAMPercentage=25.0", "-jar", "app.jar"]

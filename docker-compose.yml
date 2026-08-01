@@ -4,6 +4,21 @@ services:
   mysql:
     image: mysql:8.4
     restart: unless-stopped
+    # 1-2GB 内存的机器上跑多个容器时，MySQL 默认会按它看到的宿主机总内存
+    # 自动把 innodb_buffer_pool_size 设到可见内存的 ~75%，完全不知道其他容器
+    # 也在抢内存，几个服务一起起来就会把物理内存挤爆、被 OOM Killer 杀掉，
+    # 之后 restart:unless-stopped 又把它拉起来重新做崩溃恢复……循环触发。
+    # 所以必须显式给容器设内存硬上限，并且把 buffer pool 显式设成一个
+    # 明显小于该上限的固定值，不要依赖 MySQL 自动探测。
+    mem_limit: 400m
+    mem_reservation: 256m
+    command: >
+      --innodb-buffer-pool-size=128M
+      --innodb-buffer-pool-instances=1
+      --innodb-log-file-size=32M
+      --performance-schema=OFF
+      --max-connections=50
+      --table-open-cache=200
     environment:
       MYSQL_DATABASE: ${DB_NAME:-expense_hub}
       MYSQL_USER: ${DB_USERNAME:-expense_app}
@@ -21,6 +36,8 @@ services:
   web-backend:
     build: ./web-backend
     restart: unless-stopped
+    mem_limit: 384m
+    mem_reservation: 256m
     depends_on:
       mysql:
         condition: service_healthy
@@ -39,12 +56,16 @@ services:
   web-frontend:
     build: ./web-frontend
     restart: unless-stopped
+    mem_limit: 64m
+    mem_reservation: 32m
     networks: [internal]
     # 同上，不直接对外暴露端口
 
   gateway:
     image: nginx:1.27-alpine
     restart: unless-stopped
+    mem_limit: 64m
+    mem_reservation: 32m
     depends_on: [web-frontend, web-backend]
     volumes:
       - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
