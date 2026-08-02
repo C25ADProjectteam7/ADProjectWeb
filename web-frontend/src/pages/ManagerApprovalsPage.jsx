@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react';
 import { managerApi } from '../api/managerApi.js';
 import '../styles/theme.css';
 
+function isOverdue(submittedAt) {
+  const hoursSinceSubmit = (Date.now() - new Date(submittedAt).getTime()) / (1000 * 60 * 60);
+  return hoursSinceSubmit >= 48;
+}
+
 export default function ManagerApprovalsPage() {
   const [pending, setPending] = useState([]);
   const [history, setHistory] = useState([]);
@@ -53,14 +58,30 @@ export default function ManagerApprovalsPage() {
   if (loading) return <section className="eh-page"><p className="eh-empty">加载中...</p></section>;
   if (error) return <section className="eh-page"><p className="eh-empty">{error}</p></section>;
 
+  const overdueCount = pending.filter((item) => isOverdue(item.submittedAt)).length;
+  const sortedPending = [...pending].sort((a, b) => {
+    const aOverdue = isOverdue(a.submittedAt);
+    const bOverdue = isOverdue(b.submittedAt);
+    if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
+    return new Date(a.submittedAt) - new Date(b.submittedAt);
+  });
+
   return (
     <section className="eh-page">
       <div className="eh-title">经理审批中心</div>
       <div className="eh-subtitle">员工提交预订申请后的通知、批准 / 驳回与备注</div>
 
       <div className="eh-section-title">待办审批列表</div>
+      {overdueCount > 0 && (
+        <div className="eh-alert-card">
+          <div>
+            <div className="eh-alert-title">{overdueCount} 笔申请已超过 48 小时未处理</div>
+            <div className="eh-alert-sub">建议优先处理下方标记为"已超时"的申请</div>
+          </div>
+        </div>
+      )}
       <div className="eh-card">
-        {pending.length === 0 ? (
+        {sortedPending.length === 0 ? (
           <p className="eh-empty">暂无待处理的审批申请。</p>
         ) : (
           <table className="eh-table">
@@ -72,12 +93,17 @@ export default function ManagerApprovalsPage() {
               </tr>
             </thead>
             <tbody>
-              {pending.map((item) => (
+              {sortedPending.map((item) => (
                 <tr key={item.requestId}>
                   <td>{item.employeeName}</td>
                   <td>{item.department}</td>
                   <td>{item.destination}</td>
-                  <td className="eh-mono">{item.startDate} ~ {item.endDate}</td>
+                  <td className="eh-mono">
+                    {item.startDate} ~ {item.endDate}
+                    {isOverdue(item.submittedAt) && (
+                      <div><span className="eh-badge eh-badge-coral" style={{ marginTop: 4 }}>已超时</span></div>
+                    )}
+                  </td>
                   <td className="eh-mono">S${item.budgetRequested}</td>
                   <td className="eh-mono">S${item.departmentBudgetLimit}</td>
                   <td>

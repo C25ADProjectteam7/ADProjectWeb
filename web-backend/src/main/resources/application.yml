@@ -19,6 +19,8 @@ app:
   jwt:
     secret: ${JWT_SECRET:please-override-this-secret-in-real-environments-min-32-chars}
     expiration-ms: ${JWT_EXPIRATION_MS:3600000}
+  mobile:
+    base-url: ${MOBILE_API_BASE_URL:http://host.docker.internal:8080}
 
 management:
   endpoints:
