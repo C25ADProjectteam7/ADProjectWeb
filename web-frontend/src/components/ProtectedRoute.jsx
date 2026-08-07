@@ -1,4 +1,5 @@
 import { Navigate, Outlet } from 'react-router-dom';
+import PropTypes from 'prop-types';
 import { getRole, isAuthenticated } from '../utils/auth.js';
 
 export default function ProtectedRoute({ allowedRoles }) {
@@ -10,6 +11,10 @@ export default function ProtectedRoute({ allowedRoles }) {
   if (!allowedRoles || allowedRoles.length === 0) {
     return <Outlet />;
   }
+
+  ProtectedRoute.propTypes = {
+    allowedRoles: PropTypes.arrayOf(PropTypes.string),
+  };
 
   const role = getRole();
 
