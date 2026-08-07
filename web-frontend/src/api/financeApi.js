@@ -1,23 +1,35 @@
 import apiClient from './client.js';
 
-// TODO: 财务流程接口占位（预算、自动标记、报销审核、导出）
 export const financeApi = {
-  getBudgetConfig() {
-    return apiClient.get('/finance/budget');
+  listBudgets(params) {
+    return apiClient.get('/finance/budgets', { params });
   },
-  updateBudgetConfig(payload) {
-    return apiClient.put('/finance/budget', payload);
+
+  createBudget(payload) {
+    return apiClient.post('/finance/budgets', payload);
   },
-  listReimbursements(params) {
-    return apiClient.get('/finance/reimbursements', { params });
+
+  updateBudget(id, payload) {
+    return apiClient.put(`/finance/budgets/${id}`, payload);
   },
-  reviewReimbursement(requestId, payload) {
-    return apiClient.patch(`/finance/reimbursements/${requestId}/review`, payload);
+
+  listReimbursements() {
+    return apiClient.get('/finance/reimbursements');
   },
-  exportReimbursements(params) {
-    return apiClient.get('/finance/reimbursements/export', {
-      params,
-      responseType: 'blob',
-    });
+
+  createReimbursement(payload) {
+    return apiClient.post('/finance/reimbursements', payload);
+  },
+
+  updateReimbursement(id, payload) {
+    return apiClient.put(`/finance/reimbursements/${id}`, payload);
+  },
+
+  approveReimbursement(id) {
+    return apiClient.patch(`/finance/reimbursements/${id}/approve`);
+  },
+
+  rejectReimbursement(id) {
+    return apiClient.patch(`/finance/reimbursements/${id}/reject`);
   },
 };

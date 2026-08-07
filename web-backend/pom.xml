@@ -1,216 +1,190 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
 
-  <parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<modelVersion>4.0.0</modelVersion>
+
+<parent> <groupId>org.springframework.boot</groupId> <artifactId>spring-boot-starter-parent</artifactId> <version>4.0.7</version> <relativePath/> </parent>
+
+<groupId>com.expensehub</groupId>
+<artifactId>web-backend</artifactId>
+<version>0.1.0</version>
+
+<name>web-backend</name>
+<description>Smart Travel and Expense Hub - Web Backend (Spring Boot)</description>
+
+<properties> <java.version>21</java.version> <jjwt.version>0.12.6</jjwt.version>
+
+<sonar.projectKey>expense-hub-web-backend</sonar.projectKey>
+<sonar.projectName>Smart Travel and Expense Hub - Web Backend</sonar.projectName>
+<sonar.coverage.jacoco.xmlReportPaths>
+  target/site/jacoco/jacoco.xml
+</sonar.coverage.jacoco.xmlReportPaths>
+
+</properties>
+
+<dependencyManagement> <dependencies> <dependency> <groupId>org.springframework.boot</groupId> <artifactId>spring-boot-dependencies</artifactId> <version>4.0.7</version> <type>pom</type> <scope>import</scope> </dependency>
+  <dependency>
+    <groupId>ch.qos.logback</groupId>
+    <artifactId>logback-core</artifactId>
+    <version>1.5.36</version>
+  </dependency>
+  <dependency>
+    <groupId>org.apache.tomcat.embed</groupId>
+    <artifactId>tomcat-embed-core</artifactId>
+    <version>11.0.23</version>
+  </dependency>
+  <dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+    <version>2.21.5</version>
+  </dependency>
+  <dependency>
+    <groupId>tools.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+    <version>3.1.5</version>
+  </dependency>
+</dependencies> </dependencyManagement>
+
+<dependencies>
+
+<!-- Spring Boot Web -->
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-web</artifactId>
+</dependency>
+
+<!-- Spring Security -->
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-security</artifactId>
+</dependency>
+
+<!-- Spring Data JPA -->
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-data-jpa</artifactId>
+</dependency>
+
+<!-- Validation -->
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-validation</artifactId>
+</dependency>
+
+<!-- MySQL -->
+<dependency>
+  <groupId>com.mysql</groupId>
+  <artifactId>mysql-connector-j</artifactId>
+  <scope>runtime</scope>
+</dependency>
+
+<!-- JWT -->
+<dependency>
+  <groupId>io.jsonwebtoken</groupId>
+  <artifactId>jjwt-api</artifactId>
+  <version>${jjwt.version}</version>
+</dependency>
+
+<dependency>
+  <groupId>io.jsonwebtoken</groupId>
+  <artifactId>jjwt-impl</artifactId>
+  <version>${jjwt.version}</version>
+  <scope>runtime</scope>
+</dependency>
+
+<dependency>
+  <groupId>io.jsonwebtoken</groupId>
+  <artifactId>jjwt-jackson</artifactId>
+  <version>${jjwt.version}</version>
+  <scope>runtime</scope>
+</dependency>
+
+<!-- Lombok -->
+<dependency>
+  <groupId>org.projectlombok</groupId>
+  <artifactId>lombok</artifactId>
+  <optional>true</optional>
+</dependency>
+
+<!-- Test -->
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-test</artifactId>
+  <scope>test</scope>
+</dependency>
+
+<!-- Spring Boot 4 MockMvc test support -->
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-webmvc-test</artifactId>
+  <scope>test</scope>
+</dependency>
+
+<!-- Spring Security Test -->
+<dependency>
+  <groupId>org.springframework.security</groupId>
+  <artifactId>spring-security-test</artifactId>
+  <scope>test</scope>
+</dependency>
+
+<!-- H2 for tests -->
+<dependency>
+  <groupId>com.h2database</groupId>
+  <artifactId>h2</artifactId>
+  <scope>test</scope>
+</dependency>
+
+</dependencies>
+
+<build> <plugins>
+
+  <!-- Spring Boot -->
+  <plugin>
     <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <version>4.0.7</version>
-    <relativePath/>
-  </parent>
+    <artifactId>spring-boot-maven-plugin</artifactId>
+    <configuration>
+      <excludes>
+        <exclude>
+          <groupId>org.projectlombok</groupId>
+          <artifactId>lombok</artifactId>
+        </exclude>
+      </excludes>
+    </configuration>
+  </plugin>
 
-  <groupId>com.expensehub</groupId>
-  <artifactId>web-backend</artifactId>
-  <version>0.1.0</version>
-  <name>web-backend</name>
-  <description>Smart Travel and Expense Hub - Web Backend (Spring Boot)</description>
+  <!-- JaCoCo -->
+  <plugin>
+    <groupId>org.jacoco</groupId>
+    <artifactId>jacoco-maven-plugin</artifactId>
+    <version>0.8.12</version>
+    <executions>
 
-  <properties>
-    <java.version>21</java.version>
-    <jjwt.version>0.12.6</jjwt.version>
-    <!-- jackson-core/jackson-databind 走补丁版本号(如 2.21.4)；
-         jackson-annotations 改动很少，只发布不带补丁号的版本(2.21)，没有 2.21.4，
-         所以需要单独一个属性，不能和上面两个共用同一个版本号。 -->
-    <jackson2.version>2.21.5</jackson2.version>
-    <jackson2-annotations.version>2.21</jackson2-annotations.version>
-    <sonar.projectKey>expense-hub-web-backend</sonar.projectKey>
-    <sonar.projectName>Smart Travel and Expense Hub - Web Backend</sonar.projectName>
-    <sonar.coverage.jacoco.xmlReportPaths>
-      target/site/jacoco/jacoco.xml
-    </sonar.coverage.jacoco.xmlReportPaths>
-  </properties>
+      <execution>
+        <goals>
+          <goal>prepare-agent</goal>
+        </goals>
+      </execution>
 
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-dependencies</artifactId>
-        <version>4.0.7</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
+      <execution>
+        <id>report</id>
+        <phase>test</phase>
+        <goals>
+          <goal>report</goal>
+        </goals>
+      </execution>
 
-  <dependencies>
-    <!-- Snyk requires jackson-databind 2.21.4 or newer to remediate the jjwt-jackson
-         transitively introduced CVE. jackson-core/jackson-annotations must be pinned to the
-         SAME version explicitly: Spring Boot 4's BOM manages jackson-annotations/jackson-core
-         at an older "shared" version (2.20/2.20.1, kept in sync with Jackson 3's annotations
-         module) which is unmanaged for a directly-declared jackson-databind, so without these
-         two extra pins we end up with a broken 2.21.4/2.20 mix and a NoClassDefFoundError
-         (JsonSerializeAs) at startup. -->
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <version>${jackson2.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-      <version>${jackson2.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-annotations</artifactId>
-      <version>${jackson2-annotations.version}</version>
-    </dependency>
+    </executions>
+  </plugin>
 
-    <!-- Snyk 里几个仍标记为 "no direct upgrade" 的漏洞（即使把 Spring Boot 本身
-         升到 4.0.7，这几个具体 CVE 修复版本 Boot 的 BOM 也还没跟上），显式覆盖版本：
-         - tools.jackson.core:jackson-databind/-core：Boot 4 默认走的 Jackson 3 JSON 栈，
-           3.0.2 上有几个 Critical/High 漏洞，修复版本是 3.1.5 / 3.2.1
-         - org.apache.tomcat.embed:tomcat-embed-core：多个 CVE，修复版本 11.0.23，取最新 11.0.24
-         - ch.qos.logback:logback-classic/-core：Expression Injection CVE-2026-13006，
-           1.5.36 只是部分修复，1.5.37 才是完整修复 -->
-    <dependency>
-      <groupId>tools.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <version>3.2.1</version>
-    </dependency>
-    <dependency>
-      <groupId>tools.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-      <version>3.2.1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.tomcat.embed</groupId>
-      <artifactId>tomcat-embed-core</artifactId>
-      <version>11.0.24</version>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>1.5.37</version>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-core</artifactId>
-      <version>1.5.37</version>
-    </dependency>
+  <!-- SonarQube -->
+  <plugin>
+    <groupId>org.sonarsource.scanner.maven</groupId>
+    <artifactId>sonar-maven-plugin</artifactId>
+    <version>3.11.0.3922</version>
+  </plugin>
 
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-web</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-security</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-data-jpa</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-validation</artifactId>
-    </dependency>
+</plugins>
 
-    <dependency>
-      <groupId>com.mysql</groupId>
-      <artifactId>mysql-connector-j</artifactId>
-      <scope>runtime</scope>
-    </dependency>
+</build>
 
-    <!-- JWT -->
-    <dependency>
-      <groupId>io.jsonwebtoken</groupId>
-      <artifactId>jjwt-api</artifactId>
-      <version>${jjwt.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.jsonwebtoken</groupId>
-      <artifactId>jjwt-impl</artifactId>
-      <version>${jjwt.version}</version>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.jsonwebtoken</groupId>
-      <artifactId>jjwt-jackson</artifactId>
-      <version>${jjwt.version}</version>
-      <scope>runtime</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.projectlombok</groupId>
-      <artifactId>lombok</artifactId>
-      <optional>true</optional>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <!-- Spring Boot 4 拆分了测试基础设施：MockMvc 自动配置（@AutoConfigureMockMvc 等）
-         现在由 spring-boot-webmvc-test 模块提供，spring-boot-starter-test 不再自动带上，
-         需要显式声明其配套的测试 starter，否则 HealthControllerTest 无法装配 MockMvc。 -->
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-webmvc-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <!-- 测试时用内存数据库跑单元/集成测试，CI 中不需要真实 MySQL -->
-    <dependency>
-      <groupId>com.h2database</groupId>
-      <artifactId>h2</artifactId>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-maven-plugin</artifactId>
-        <configuration>
-          <excludes>
-            <exclude>
-              <groupId>org.projectlombok</groupId>
-              <artifactId>lombok</artifactId>
-            </exclude>
-          </excludes>
-        </configuration>
-      </plugin>
-      <!-- 生成覆盖率报告，供 SonarQube 的 Quality Gate 使用 -->
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.8.12</version>
-        <executions>
-          <execution>
-            <goals><goal>prepare-agent</goal></goals>
-          </execution>
-          <execution>
-            <id>report</id>
-            <phase>test</phase>
-            <goals><goal>report</goal></goals>
-          </execution>
-        </executions>
-      </plugin>
-      <!-- 声明版本，让 CI 里 `mvn sonar:sonar` 能解析到插件而不必在命令行传版本 -->
-      <plugin>
-        <groupId>org.sonarsource.scanner.maven</groupId>
-        <artifactId>sonar-maven-plugin</artifactId>
-        <version>3.11.0.3922</version>
-      </plugin>
-    </plugins>
-  </build>
 </project>
