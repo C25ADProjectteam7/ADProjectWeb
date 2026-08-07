@@ -22,7 +22,28 @@
 
 </properties>
 
-<dependencyManagement> <dependencies> <dependency> <groupId>org.springframework.boot</groupId> <artifactId>spring-boot-dependencies</artifactId> <version>4.0.7</version> <type>pom</type> <scope>import</scope> </dependency> </dependencies> </dependencyManagement>
+<dependencyManagement> <dependencies> <dependency> <groupId>org.springframework.boot</groupId> <artifactId>spring-boot-dependencies</artifactId> <version>4.0.7</version> <type>pom</type> <scope>import</scope> </dependency>
+  <dependency>
+    <groupId>ch.qos.logback</groupId>
+    <artifactId>logback-core</artifactId>
+    <version>1.5.36</version>
+  </dependency>
+  <dependency>
+    <groupId>org.apache.tomcat.embed</groupId>
+    <artifactId>tomcat-embed-core</artifactId>
+    <version>11.0.23</version>
+  </dependency>
+  <dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+    <version>2.21.5</version>
+  </dependency>
+  <dependency>
+    <groupId>tools.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+    <version>3.1.5</version>
+  </dependency>
+</dependencies> </dependencyManagement>
 
 <dependencies>
 
