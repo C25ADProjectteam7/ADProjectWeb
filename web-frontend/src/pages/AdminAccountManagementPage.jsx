@@ -66,8 +66,7 @@ export default function AdminAccountManagementPage() {
         account.fullName?.toLowerCase().includes(keyword) ||
         account.department?.toLowerCase().includes(keyword);
 
-      const matchesRole =
-        roleFilter === 'ALL' || account.role === roleFilter;
+      const matchesRole = roleFilter === 'ALL' || account.role === roleFilter;
 
       const matchesStatus =
         statusFilter === 'ALL' ||
@@ -140,10 +139,7 @@ export default function AdminAccountManagementPage() {
           payload.password = form.password;
         }
 
-        await adminAccountsApi.updateAccount(
-          editingAccount.id,
-          payload,
-        );
+        await adminAccountsApi.updateAccount(editingAccount.id, payload);
 
         setMessage('Account updated successfully.');
         setMessageType('success');
@@ -166,8 +162,7 @@ export default function AdminAccountManagementPage() {
       console.error(error);
 
       const serverMessage =
-        error.response?.data?.message ||
-        'The account operation could not be completed.';
+        error.response?.data?.message || 'The account operation could not be completed.';
 
       setMessage(serverMessage);
       setMessageType('error');
@@ -177,32 +172,23 @@ export default function AdminAccountManagementPage() {
   const handleStatusChange = async (account) => {
     const action = account.enabled ? 'disable' : 'enable';
 
-    const confirmed = window.confirm(
-      `Are you sure you want to ${action} ${account.email}?`,
-    );
+    const confirmed = window.confirm(`Are you sure you want to ${action} ${account.email}?`);
 
     if (!confirmed) {
       return;
     }
 
     try {
-      await adminAccountsApi.updateAccountStatus(
-        account.id,
-        !account.enabled,
-      );
+      await adminAccountsApi.updateAccountStatus(account.id, !account.enabled);
 
-      setMessage(
-        `${account.email} has been ${action}d successfully.`,
-      );
+      setMessage(`${account.email} has been ${action}d successfully.`);
       setMessageType('success');
 
       await loadAccounts();
     } catch (error) {
       console.error(error);
 
-      setMessage(
-        `Unable to ${action} this account.`,
-      );
+      setMessage(`Unable to ${action} this account.`);
       setMessageType('error');
     }
   };
@@ -216,15 +202,12 @@ export default function AdminAccountManagementPage() {
           <h1>Account Management</h1>
 
           <p>
-            Create, view, edit, enable and disable system accounts.
-            Role assignments determine access to different modules.
+            Create, view, edit, enable and disable system accounts. Role assignments determine
+            access to different modules.
           </p>
         </div>
 
-        <button
-          className="primary-button"
-          onClick={openCreateForm}
-        >
+        <button className="primary-button" onClick={openCreateForm}>
           + Create Account
         </button>
       </div>
@@ -232,14 +215,10 @@ export default function AdminAccountManagementPage() {
       {message && (
         <div
           className={`system-message ${
-            messageType === 'error'
-              ? 'system-message-error'
-              : 'system-message-success'
+            messageType === 'error' ? 'system-message-error' : 'system-message-success'
           }`}
         >
-          <span className="message-icon">
-            {messageType === 'error' ? '!' : '✓'}
-          </span>
+          <span className="message-icon">{messageType === 'error' ? '!' : '✓'}</span>
 
           <span>{message}</span>
         </div>
@@ -253,27 +232,17 @@ export default function AdminAccountManagementPage() {
 
         <div className="summary-card">
           <span className="summary-label">ACTIVE</span>
-          <strong>
-            {accounts.filter((account) => account.enabled).length}
-          </strong>
+          <strong>{accounts.filter((account) => account.enabled).length}</strong>
         </div>
 
         <div className="summary-card">
           <span className="summary-label">DISABLED</span>
-          <strong>
-            {accounts.filter((account) => !account.enabled).length}
-          </strong>
+          <strong>{accounts.filter((account) => !account.enabled).length}</strong>
         </div>
 
         <div className="summary-card">
           <span className="summary-label">ADMINISTRATORS</span>
-          <strong>
-            {
-              accounts.filter(
-                (account) => account.role === 'ADMIN',
-              ).length
-            }
-          </strong>
+          <strong>{accounts.filter((account) => account.role === 'ADMIN').length}</strong>
         </div>
       </div>
 
@@ -300,9 +269,7 @@ export default function AdminAccountManagementPage() {
           <select
             className="filter-select"
             value={roleFilter}
-            onChange={(event) =>
-              setRoleFilter(event.target.value)
-            }
+            onChange={(event) => setRoleFilter(event.target.value)}
           >
             <option value="ALL">All Roles</option>
             <option value="ADMIN">Administrator</option>
@@ -313,9 +280,7 @@ export default function AdminAccountManagementPage() {
           <select
             className="filter-select"
             value={statusFilter}
-            onChange={(event) =>
-              setStatusFilter(event.target.value)
-            }
+            onChange={(event) => setStatusFilter(event.target.value)}
           >
             <option value="ALL">All Status</option>
             <option value="ENABLED">Enabled</option>
@@ -324,18 +289,14 @@ export default function AdminAccountManagementPage() {
         </div>
 
         {loading ? (
-          <div className="empty-state">
-            Loading account information...
-          </div>
+          <div className="empty-state">Loading account information...</div>
         ) : filteredAccounts.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">?</div>
 
             <h3>No accounts found</h3>
 
-            <p>
-              Try changing the search or filter settings.
-            </p>
+            <p>Try changing the search or filter settings.</p>
           </div>
         ) : (
           <div className="table-wrapper">
@@ -362,54 +323,37 @@ export default function AdminAccountManagementPage() {
                     <tr key={account.id}>
                       <td>
                         <div className="account-identity">
-                          <div className="account-avatar">
-                            {avatarLetter}
-                          </div>
+                          <div className="account-avatar">{avatarLetter}</div>
 
                           <div>
-                            <div className="account-name">
-                              {account.fullName}
-                            </div>
+                            <div className="account-name">{account.fullName}</div>
 
-                            <div className="account-email">
-                              {account.email}
-                            </div>
+                            <div className="account-email">{account.email}</div>
                           </div>
                         </div>
                       </td>
 
-                      <td>
-                        {account.department || '—'}
-                      </td>
+                      <td>{account.department || '—'}</td>
 
                       <td>
                         <div className="role-cell">
-                          <span
-                            className={`role-badge role-${account.role}`}
-                          >
-                            {roleLabels[account.role] ||
-                              account.role}
+                          <span className={`role-badge role-${account.role}`}>
+                            {roleLabels[account.role] || account.role}
                           </span>
 
-                          <small>
-                            {roleDescriptions[account.role]}
-                          </small>
+                          <small>{roleDescriptions[account.role]}</small>
                         </div>
                       </td>
 
                       <td>
                         <span
                           className={`status-badge ${
-                            account.enabled
-                              ? 'status-enabled'
-                              : 'status-disabled'
+                            account.enabled ? 'status-enabled' : 'status-disabled'
                           }`}
                         >
                           <span className="status-dot" />
 
-                          {account.enabled
-                            ? 'Enabled'
-                            : 'Disabled'}
+                          {account.enabled ? 'Enabled' : 'Disabled'}
                         </span>
                       </td>
 
@@ -429,26 +373,16 @@ export default function AdminAccountManagementPage() {
                         <div className="action-buttons">
                           <button
                             className="secondary-button"
-                            onClick={() =>
-                              openEditForm(account)
-                            }
+                            onClick={() => openEditForm(account)}
                           >
                             Edit
                           </button>
 
                           <button
-                            className={
-                              account.enabled
-                                ? 'danger-button'
-                                : 'success-button'
-                            }
-                            onClick={() =>
-                              handleStatusChange(account)
-                            }
+                            className={account.enabled ? 'danger-button' : 'success-button'}
+                            onClick={() => handleStatusChange(account)}
                           >
-                            {account.enabled
-                              ? 'Disable'
-                              : 'Enable'}
+                            {account.enabled ? 'Disable' : 'Enable'}
                           </button>
                         </div>
                       </td>
@@ -474,26 +408,15 @@ export default function AdminAccountManagementPage() {
             <div className="modal-header">
               <div>
                 <div className="page-eyebrow">
-                  {editingAccount
-                    ? 'EDIT ACCOUNT'
-                    : 'NEW ACCOUNT'}
+                  {editingAccount ? 'EDIT ACCOUNT' : 'NEW ACCOUNT'}
                 </div>
 
-                <h2>
-                  {editingAccount
-                    ? 'Edit Account'
-                    : 'Create Account'}
-                </h2>
+                <h2>{editingAccount ? 'Edit Account' : 'Create Account'}</h2>
 
-                <p>
-                  Assign account information and system role.
-                </p>
+                <p>Assign account information and system role.</p>
               </div>
 
-              <button
-                className="modal-close"
-                onClick={closeForm}
-              >
+              <button className="modal-close" onClick={closeForm}>
                 ×
               </button>
             </div>
@@ -538,11 +461,7 @@ export default function AdminAccountManagementPage() {
                 </div>
 
                 <div className="form-group">
-                  <label>
-                    {editingAccount
-                      ? 'New Password'
-                      : 'Password'}
-                  </label>
+                  <label>{editingAccount ? 'New Password' : 'Password'}</label>
 
                   <input
                     name="password"
@@ -561,59 +480,33 @@ export default function AdminAccountManagementPage() {
                 <div className="form-group form-group-full">
                   <label>System Role</label>
 
-                  <select
-                    name="role"
-                    value={form.role}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="FINANCE_STAFF">
-                      Finance Staff
-                    </option>
+                  <select name="role" value={form.role} onChange={handleChange} required>
+                    <option value="FINANCE_STAFF">Finance Staff</option>
 
-                    <option value="MANAGER">
-                      Manager
-                    </option>
+                    <option value="MANAGER">Manager</option>
 
-                    <option value="ADMIN">
-                      Administrator
-                    </option>
+                    <option value="ADMIN">Administrator</option>
                   </select>
                 </div>
               </div>
 
               <div className="role-permission-preview">
-                <div className="preview-title">
-                  ROLE PERMISSION PREVIEW
-                </div>
+                <div className="preview-title">ROLE PERMISSION PREVIEW</div>
 
                 <div className="permission-card">
-                  <strong>
-                    {roleLabels[form.role]}
-                  </strong>
+                  <strong>{roleLabels[form.role]}</strong>
 
-                  <span>
-                    {roleDescriptions[form.role]}
-                  </span>
+                  <span>{roleDescriptions[form.role]}</span>
                 </div>
               </div>
 
               <div className="modal-actions">
-                <button
-                  type="button"
-                  className="secondary-button large-button"
-                  onClick={closeForm}
-                >
+                <button type="button" className="secondary-button large-button" onClick={closeForm}>
                   Cancel
                 </button>
 
-                <button
-                  type="submit"
-                  className="success-button large-button"
-                >
-                  {editingAccount
-                    ? 'Save Changes'
-                    : 'Create Account'}
+                <button type="submit" className="success-button large-button">
+                  {editingAccount ? 'Save Changes' : 'Create Account'}
                 </button>
               </div>
             </form>

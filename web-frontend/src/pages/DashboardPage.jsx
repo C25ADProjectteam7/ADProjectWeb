@@ -10,18 +10,15 @@ const roleInformation = {
     permissions: [
       {
         title: 'Account Management',
-        description:
-          'Create, view, edit, enable and disable system accounts.',
+        description: 'Create, view, edit, enable and disable system accounts.',
       },
       {
         title: 'Role Management',
-        description:
-          'Assign appropriate system roles and manage role-based access.',
+        description: 'Assign appropriate system roles and manage role-based access.',
       },
       {
         title: 'System Administration',
-        description:
-          'Maintain overall system access and administrative settings.',
+        description: 'Maintain overall system access and administrative settings.',
       },
       {
         title: 'Analytics & Reporting',
@@ -40,23 +37,19 @@ const roleInformation = {
     permissions: [
       {
         title: 'Reimbursement Management',
-        description:
-          'Review and manage employee reimbursement submissions.',
+        description: 'Review and manage employee reimbursement submissions.',
       },
       {
         title: 'Expense Review',
-        description:
-          'Review submitted expense information and supporting details.',
+        description: 'Review submitted expense information and supporting details.',
       },
       {
         title: 'Financial Processing',
-        description:
-          'Process reimbursement records and manage finance-related workflow.',
+        description: 'Process reimbursement records and manage finance-related workflow.',
       },
       {
         title: 'Analytics & Reporting',
-        description:
-          'Access financial and expense-related analytics and reports.',
+        description: 'Access financial and expense-related analytics and reports.',
       },
     ],
   },
@@ -70,23 +63,19 @@ const roleInformation = {
     permissions: [
       {
         title: 'Approval Management',
-        description:
-          'Review reimbursement requests submitted for managerial approval.',
+        description: 'Review reimbursement requests submitted for managerial approval.',
       },
       {
         title: 'Request Review',
-        description:
-          'Review employee expense and reimbursement information before approval.',
+        description: 'Review employee expense and reimbursement information before approval.',
       },
       {
         title: 'Approval Workflow',
-        description:
-          'Approve or reject requests according to the organisation workflow.',
+        description: 'Approve or reject requests according to the organisation workflow.',
       },
       {
         title: 'Management Overview',
-        description:
-          'Monitor relevant requests and approval activities.',
+        description: 'Monitor relevant requests and approval activities.',
       },
     ],
   },
@@ -100,18 +89,15 @@ const roleInformation = {
     permissions: [
       {
         title: 'Expense Submission',
-        description:
-          'Submit travel and expense information for reimbursement.',
+        description: 'Submit travel and expense information for reimbursement.',
       },
       {
         title: 'Reimbursement Tracking',
-        description:
-          'Track the status of submitted reimbursement requests.',
+        description: 'Track the status of submitted reimbursement requests.',
       },
       {
         title: 'Personal Records',
-        description:
-          'View your own expense and reimbursement information.',
+        description: 'View your own expense and reimbursement information.',
       },
     ],
   },
@@ -122,30 +108,22 @@ export default function DashboardPage() {
   const fullName = localStorage.getItem('fullName') || 'User';
 
   const currentRole = useMemo(() => {
-    return (
-      roleInformation[role] ||
-      roleInformation.EMPLOYEE
-    );
+    return roleInformation[role] || roleInformation.EMPLOYEE;
   }, [role]);
 
   return (
     <section className="dashboard-page">
       <div className="dashboard-container">
-
         {/* Header */}
         <div className="dashboard-header">
           <div>
-            <div className="dashboard-eyebrow">
-              SMART TRAVEL & EXPENSE HUB
-            </div>
+            <div className="dashboard-eyebrow">SMART TRAVEL & EXPENSE HUB</div>
 
-            <h1>
-              Welcome, {fullName}
-            </h1>
+            <h1>Welcome, {fullName}</h1>
 
             <p>
-              This dashboard provides an overview of your
-              role and the system functions available to you.
+              This dashboard provides an overview of your role and the system functions available to
+              you.
             </p>
           </div>
 
@@ -157,25 +135,16 @@ export default function DashboardPage() {
 
         {/* Role Overview */}
         <div className="role-overview-card">
-
           <div className="role-overview-left">
-            <div className="role-icon">
-              {currentRole.shortName.charAt(0)}
-            </div>
+            <div className="role-icon">{currentRole.shortName.charAt(0)}</div>
           </div>
 
           <div className="role-overview-content">
-            <div className="section-label">
-              CURRENT ROLE
-            </div>
+            <div className="section-label">CURRENT ROLE</div>
 
-            <h2>
-              {currentRole.name}
-            </h2>
+            <h2>{currentRole.name}</h2>
 
-            <p>
-              {currentRole.description}
-            </p>
+            <p>{currentRole.description}</p>
           </div>
 
           <div className="access-indicator">
@@ -186,88 +155,55 @@ export default function DashboardPage() {
 
         {/* Permission Section */}
         <div className="permissions-section">
-
           <div className="section-heading">
             <div>
-              <div className="section-label">
-                ACCESS OVERVIEW
-              </div>
+              <div className="section-label">ACCESS OVERVIEW</div>
 
-              <h2>
-                Your Available Functions
-              </h2>
+              <h2>Your Available Functions</h2>
 
-              <p>
-                The functions below are available based on
-                your assigned system role.
-              </p>
+              <p>The functions below are available based on your assigned system role.</p>
             </div>
           </div>
 
           <div className="permission-grid">
-            {currentRole.permissions.map(
-              (permission, index) => (
-                <div
-                  className="permission-card"
-                  key={permission.title}
-                >
-                  <div className="permission-number">
-                    {String(index + 1).padStart(2, '0')}
-                  </div>
+            {currentRole.permissions.map((permission, index) => (
+              <div className="permission-card" key={permission.title}>
+                <div className="permission-number">{String(index + 1).padStart(2, '0')}</div>
 
-                  <div className="permission-content">
-                    <h3>
-                      {permission.title}
-                    </h3>
+                <div className="permission-content">
+                  <h3>{permission.title}</h3>
 
-                    <p>
-                      {permission.description}
-                    </p>
-                  </div>
-
-                  <div className="permission-accent" />
+                  <p>{permission.description}</p>
                 </div>
-              ),
-            )}
+
+                <div className="permission-accent" />
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Security Notice */}
         <div className="dashboard-notice">
-
-          <div className="notice-icon">
-            !
-          </div>
+          <div className="notice-icon">!</div>
 
           <div>
-            <strong>
-              Role-based access control
-            </strong>
+            <strong>Role-based access control</strong>
 
             <p>
-              Your available system functions are determined
-              by your assigned role. Functions outside your
-              permission level are not available.
+              Your available system functions are determined by your assigned role. Functions
+              outside your permission level are not available.
             </p>
           </div>
-
         </div>
 
         {/* Footer */}
         <div className="dashboard-footer">
-          <span>
-            SMART TRAVEL & EXPENSE HUB
-          </span>
+          <span>SMART TRAVEL & EXPENSE HUB</span>
 
-          <span className="footer-divider">
-            |
-          </span>
+          <span className="footer-divider">|</span>
 
-          <span>
-            Role-based Administration Portal
-          </span>
+          <span>Role-based Administration Portal</span>
         </div>
-
       </div>
 
       <style>{`

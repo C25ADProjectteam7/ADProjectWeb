@@ -50,9 +50,7 @@ export default function BasicLayout() {
 
   const avatarLetter = fullName.charAt(0).toUpperCase();
 
-  const visibleMenuItems = menuItems.filter((item) =>
-    item.allowedRoles.includes(role)
-  );
+  const visibleMenuItems = menuItems.filter((item) => item.allowedRoles.includes(role));
 
   return (
     <div className="app-shell">
@@ -61,7 +59,8 @@ export default function BasicLayout() {
           <div className="brand-mark">S</div>
 
           <div>
-            <div className="brand-title">Smart Travel &</div><div className="brand-subtitle">Expense Hub</div>
+            <div className="brand-title">Smart Travel &</div>
+            <div className="brand-subtitle">Expense Hub</div>
           </div>
         </div>
 
@@ -73,9 +72,7 @@ export default function BasicLayout() {
               key={item.path}
               to={item.path}
               end={item.end}
-              className={({ isActive }) =>
-                `sidebar-link ${isActive ? 'active' : ''}`
-              }
+              className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
             >
               <span className="sidebar-link-dot" />
               <span>{item.label}</span>
@@ -87,9 +84,7 @@ export default function BasicLayout() {
           <div className="security-note">
             <div className="security-note-title">SECURE PORTAL</div>
 
-            <div className="security-note-text">
-              Access is controlled by your assigned role.
-            </div>
+            <div className="security-note-text">Access is controlled by your assigned role.</div>
           </div>
         </div>
       </aside>
@@ -97,34 +92,21 @@ export default function BasicLayout() {
       <div className="main-area">
         <header className="topbar">
           <div>
-            <div className="topbar-title">
-              Web Administration Portal
-            </div>
+            <div className="topbar-title">Web Administration Portal</div>
 
-            <div className="topbar-subtitle">
-              Smart Travel and Expense Hub
-            </div>
+            <div className="topbar-subtitle">Smart Travel and Expense Hub</div>
           </div>
 
           <div className="user-area">
-            <div className="user-avatar">
-              {avatarLetter}
-            </div>
+            <div className="user-avatar">{avatarLetter}</div>
 
             <div className="user-details">
-              <div className="user-name">
-                {fullName}
-              </div>
+              <div className="user-name">{fullName}</div>
 
-              <div className="user-role">
-                {roleLabel}
-              </div>
+              <div className="user-role">{roleLabel}</div>
             </div>
 
-            <button
-              className="logout-button"
-              onClick={logout}
-            >
+            <button className="logout-button" onClick={logout}>
               Logout
             </button>
           </div>
@@ -137,7 +119,3 @@ export default function BasicLayout() {
     </div>
   );
 }
-
-
-
-

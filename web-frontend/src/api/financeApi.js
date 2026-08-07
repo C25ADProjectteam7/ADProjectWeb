@@ -33,4 +33,3 @@ export const financeApi = {
     return apiClient.patch(`/finance/reimbursements/${id}/reject`);
   },
 };
-

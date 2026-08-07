@@ -25,41 +25,19 @@ export default function App() {
 
           {/* Admin only */}
           <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
-            <Route
-              path="admin/accounts"
-              element={<AdminAccountManagementPage />}
-            />
+            <Route path="admin/accounts" element={<AdminAccountManagementPage />} />
 
-            <Route
-              path="admin/accounts/create"
-              element={<AuthAccountCreationPage />}
-            />
+            <Route path="admin/accounts/create" element={<AuthAccountCreationPage />} />
           </Route>
 
           {/* Finance / Manager / Admin */}
-          <Route
-            element={
-              <ProtectedRoute
-                allowedRoles={['ADMIN', 'FINANCE_STAFF', 'MANAGER']}
-              />
-            }
-          >
-            <Route
-              path="finance/reimbursements"
-              element={<FinanceReimbursementPage />}
-            />
+          <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'FINANCE_STAFF', 'MANAGER']} />}>
+            <Route path="finance/reimbursements" element={<FinanceReimbursementPage />} />
           </Route>
 
           {/* Manager / Admin */}
-          <Route
-            element={
-              <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']} />
-            }
-          >
-            <Route
-              path="manager/approvals"
-              element={<ManagerApprovalsPage />}
-            />
+          <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']} />}>
+            <Route path="manager/approvals" element={<ManagerApprovalsPage />} />
           </Route>
 
           {/* All authenticated users */}

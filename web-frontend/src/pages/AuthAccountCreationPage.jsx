@@ -38,9 +38,7 @@ export default function AuthAccountCreationPage() {
 
       console.log('Created account:', response.data);
 
-      setSuccess(
-        `Account ${response.data.email} was created successfully.`,
-      );
+      setSuccess(`Account ${response.data.email} was created successfully.`);
 
       setForm({
         email: '',
@@ -56,10 +54,7 @@ export default function AuthAccountCreationPage() {
     } catch (err) {
       console.error(err);
 
-      setError(
-        err.response?.data?.message ||
-          'Failed to create account.',
-      );
+      setError(err.response?.data?.message || 'Failed to create account.');
     } finally {
       setLoading(false);
     }
@@ -68,16 +63,12 @@ export default function AuthAccountCreationPage() {
   return (
     <section>
       <div style={{ marginBottom: '20px' }}>
-        <Link to="/admin/accounts">
-          ← Back to Account Management
-        </Link>
+        <Link to="/admin/accounts">← Back to Account Management</Link>
       </div>
 
       <h2>Account Creation</h2>
 
-      <p>
-        Create a new web account and assign the appropriate role.
-      </p>
+      <p>Create a new web account and assign the appropriate role.</p>
 
       {error && (
         <div
@@ -108,14 +99,7 @@ export default function AuthAccountCreationPage() {
           <label>
             Email
             <br />
-
-            <input
-              type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              required
-            />
+            <input type="email" name="email" value={form.email} onChange={handleChange} required />
           </label>
         </div>
 
@@ -123,7 +107,6 @@ export default function AuthAccountCreationPage() {
           <label>
             Password
             <br />
-
             <input
               type="password"
               name="password"
@@ -134,16 +117,13 @@ export default function AuthAccountCreationPage() {
             />
           </label>
 
-          <small>
-            Password must contain at least 6 characters.
-          </small>
+          <small>Password must contain at least 6 characters.</small>
         </div>
 
         <div style={{ marginBottom: '15px' }}>
           <label>
             Full Name
             <br />
-
             <input
               type="text"
               name="fullName"
@@ -158,7 +138,6 @@ export default function AuthAccountCreationPage() {
           <label>
             Department
             <br />
-
             <input
               type="text"
               name="department"
@@ -173,32 +152,18 @@ export default function AuthAccountCreationPage() {
           <label>
             Role
             <br />
+            <select name="role" value={form.role} onChange={handleChange}>
+              <option value="FINANCE_STAFF">Finance Staff</option>
 
-            <select
-              name="role"
-              value={form.role}
-              onChange={handleChange}
-            >
-              <option value="FINANCE_STAFF">
-                Finance Staff
-              </option>
+              <option value="MANAGER">Manager</option>
 
-              <option value="MANAGER">
-                Manager
-              </option>
-
-              <option value="ADMIN">
-                Admin
-              </option>
+              <option value="ADMIN">Admin</option>
             </select>
           </label>
         </div>
 
         <div>
-          <button
-            type="submit"
-            disabled={loading}
-          >
+          <button type="submit" disabled={loading}>
             {loading ? 'Creating...' : 'Create Account'}
           </button>
 

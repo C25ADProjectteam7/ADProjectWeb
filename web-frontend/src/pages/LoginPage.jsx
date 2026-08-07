@@ -69,9 +69,7 @@ export default function LoginPage() {
 
           <div style={styles.brandSubtitle}>& Expense Hub</div>
 
-          <div style={styles.brandDescription}>
-            Web Administration Portal
-          </div>
+          <div style={styles.brandDescription}>Web Administration Portal</div>
 
           <div style={styles.featureList}>
             <div style={styles.featureItem}>
@@ -114,9 +112,7 @@ export default function LoginPage() {
 
             <h1 style={styles.title}>Sign in</h1>
 
-            <p style={styles.description}>
-              Sign in to access the administration portal.
-            </p>
+            <p style={styles.description}>Sign in to access the administration portal.</p>
 
             {error && (
               <div style={styles.errorBox}>
@@ -169,15 +165,11 @@ export default function LoginPage() {
             <div style={styles.securityNotice}>
               <span style={styles.securityIcon}>●</span>
 
-              <span>
-                Secure access · Role-based permissions enabled
-              </span>
+              <span>Secure access · Role-based permissions enabled</span>
             </div>
           </div>
 
-          <div style={styles.footer}>
-            Smart Travel & Expense Hub · Administration Portal
-          </div>
+          <div style={styles.footer}>Smart Travel & Expense Hub · Administration Portal</div>
         </section>
       </main>
     </div>
@@ -195,8 +187,7 @@ const styles = {
     boxSizing: 'border-box',
     position: 'relative',
     overflow: 'hidden',
-    fontFamily:
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
   },
 
   backgroundShapeOne: {
@@ -234,8 +225,7 @@ const styles = {
   },
 
   brandPanel: {
-    background:
-      'linear-gradient(145deg, #07111f 0%, #0b1d31 55%, #102a40 100%)',
+    background: 'linear-gradient(145deg, #07111f 0%, #0b1d31 55%, #102a40 100%)',
     color: '#ffffff',
     padding: '64px 56px',
     display: 'flex',
