@@ -70,14 +70,14 @@ describe('FinanceReimbursementPage', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText('财务报销流程处理')).toBeInTheDocument();
+    expect(screen.getByText('Finance Reimbursement Process')).toBeInTheDocument();
 
     await waitFor(() => expect(financeApi.listBudgets).toHaveBeenCalled());
     await waitFor(() => expect(financeApi.listReimbursements).toHaveBeenCalled());
 
     expect((await screen.findAllByText('Engineering')).length).toBeGreaterThan(0);
     expect(await screen.findByText('alice')).toBeInTheDocument();
-    expect(await screen.findByText('缺少收据')).toBeInTheDocument();
-    expect(await screen.findByText('无收据')).toBeInTheDocument();
+    expect(await screen.findByText('MISSING_RECEIPT')).toBeInTheDocument();
+    expect(await screen.findByText('No Receipt')).toBeInTheDocument();
   });
 });

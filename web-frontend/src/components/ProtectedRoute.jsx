@@ -7,7 +7,6 @@ export default function ProtectedRoute({ allowedRoles }) {
     return <Navigate to="/login" replace />;
   }
 
-  // 如果没有设置角色限制，只要求登录即可
   if (!allowedRoles || allowedRoles.length === 0) {
     return <Outlet />;
   }
@@ -18,7 +17,6 @@ export default function ProtectedRoute({ allowedRoles }) {
 
   const role = getRole();
 
-  // 当前用户没有权限
   if (!allowedRoles.includes(role)) {
     return <Navigate to="/" replace />;
   }

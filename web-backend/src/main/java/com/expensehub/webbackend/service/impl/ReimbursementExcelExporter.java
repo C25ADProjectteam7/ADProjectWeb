@@ -18,20 +18,20 @@ import org.springframework.stereotype.Component;
 public class ReimbursementExcelExporter {
 
     private static final String[] HEADERS = {
-        "报销ID",
-        "员工",
-        "部门",
-        "类别",
-        "金额",
-        "币种",
-        "备注",
-        "是否有收据",
-        "收据链接",
-        "状态",
-        "合规标记",
-        "提交时间",
-        "审核意见",
-        "审核人",
+        "Reimbursement ID",
+        "Employee",
+        "Department",
+        "Category",
+        "Amount",
+        "Currency",
+        "Description",
+        "Receipt Attached",
+        "Receipt URL",
+        "Status",
+        "Policy Flags",
+        "Submitted At",
+        "Review Comment",
+        "Reviewed By",
     };
 
     public byte[] export(List<ReimbursementResponse> records) {

@@ -17,7 +17,7 @@ public class ReimbursementPolicyEngine {
     public static final String FLAG_OVER_PER_DIEM = "OVER_PER_DIEM";
     public static final String FLAG_OVER_BUDGET = "OVER_BUDGET";
 
-    /** 各费用类别的单笔 per-diem 上限，超出即标记 OVER_PER_DIEM。 */
+
     private static final Map<ReimbursementCategory, BigDecimal> PER_DIEM_LIMITS =
             Map.of(
                     ReimbursementCategory.MEAL, new BigDecimal("75.00"),

@@ -37,7 +37,6 @@ public class BudgetConfig {
     @Column(name = "period_type", nullable = false)
     private BudgetPeriodType periodType;
 
-    /** 如 "2026"（ANNUAL）或 "2026-Q1"（QUARTERLY） */
     @Column(name = "period_label", nullable = false)
     private String periodLabel;
 
