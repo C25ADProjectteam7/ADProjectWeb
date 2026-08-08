@@ -20,11 +20,7 @@
   <properties>
     <java.version>21</java.version>
     <jjwt.version>0.12.6</jjwt.version>
-    <!-- jackson-core/jackson-databind 走补丁版本号(如 2.21.4)；
-         jackson-annotations 改动很少，只发布不带补丁号的版本(2.21)，没有 2.21.4，
-         所以需要单独一个属性，不能和上面两个共用同一个版本号。 -->
-    <jackson2.version>2.21.5</jackson2.version>
-    <jackson2-annotations.version>2.21</jackson2-annotations.version>
+
     <sonar.projectKey>expense-hub-web-backend</sonar.projectKey>
     <sonar.projectName>Smart Travel and Expense Hub - Web Backend</sonar.projectName>
     <sonar.coverage.jacoco.xmlReportPaths>
@@ -45,46 +41,12 @@
   </dependencyManagement>
 
   <dependencies>
-    <!-- Snyk requires jackson-databind 2.21.4 or newer to remediate the jjwt-jackson
-         transitively introduced CVE. jackson-core/jackson-annotations must be pinned to the
-         SAME version explicitly: Spring Boot 4's BOM manages jackson-annotations/jackson-core
-         at an older "shared" version (2.20/2.20.1, kept in sync with Jackson 3's annotations
-         module) which is unmanaged for a directly-declared jackson-databind, so without these
-         two extra pins we end up with a broken 2.21.4/2.20 mix and a NoClassDefFoundError
-         (JsonSerializeAs) at startup. -->
+
     <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <version>${jackson2.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-      <version>${jackson2.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-annotations</artifactId>
-      <version>${jackson2-annotations.version}</version>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
 
-    <!-- Snyk 里几个仍标记为 "no direct upgrade" 的漏洞（即使把 Spring Boot 本身
-         升到 4.0.7，这几个具体 CVE 修复版本 Boot 的 BOM 也还没跟上），显式覆盖版本：
-         - tools.jackson.core:jackson-databind/-core：Boot 4 默认走的 Jackson 3 JSON 栈，
-           3.0.2 上有几个 Critical/High 漏洞，修复版本是 3.1.5 / 3.2.1
-         - org.apache.tomcat.embed:tomcat-embed-core：多个 CVE，修复版本 11.0.23，取最新 11.0.24
-         - ch.qos.logback:logback-classic/-core：Expression Injection CVE-2026-13006，
-           1.5.36 只是部分修复，1.5.37 才是完整修复 -->
-    <dependency>
-      <groupId>tools.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <version>3.2.1</version>
-    </dependency>
-    <dependency>
-      <groupId>tools.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-      <version>3.2.1</version>
-    </dependency>
     <dependency>
       <groupId>org.apache.tomcat.embed</groupId>
       <artifactId>tomcat-embed-core</artifactId>
@@ -124,6 +86,13 @@
       <scope>runtime</scope>
     </dependency>
 
+    <!-- 对应 backlog Item 18：报销数据导出至 Excel -->
+    <dependency>
+      <groupId>org.apache.poi</groupId>
+      <artifactId>poi-ooxml</artifactId>
+      <version>5.3.0</version>
+    </dependency>
+
     <!-- JWT -->
     <dependency>
       <groupId>io.jsonwebtoken</groupId>
@@ -137,10 +106,10 @@
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>io.jsonwebtoken</groupId>
-      <artifactId>jjwt-jackson</artifactId>
-      <version>${jjwt.version}</version>
-      <scope>runtime</scope>
+        <groupId>io.jsonwebtoken</groupId>
+        <artifactId>jjwt-gson</artifactId>
+        <version>${jjwt.version}</version>
+        <scope>runtime</scope>
     </dependency>
 
     <dependency>

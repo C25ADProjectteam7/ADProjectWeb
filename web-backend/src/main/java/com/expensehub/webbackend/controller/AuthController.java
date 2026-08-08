@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 对应 backlog Item 1：账号安全登录 */
+// Corresponding to backlog Item 1: Secure login for user accounts
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {

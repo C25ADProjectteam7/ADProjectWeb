@@ -11,7 +11,6 @@ import com.expensehub.webbackend.service.AuthService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-/** 对应 backlog Item 1：登录校验、失败5次后锁定账号 */
 @Service
 public class AuthServiceImpl implements AuthService {
 

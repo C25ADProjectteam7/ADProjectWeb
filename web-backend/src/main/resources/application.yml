@@ -20,6 +20,12 @@ app:
     secret: ${JWT_SECRET:please-override-this-secret-in-real-environments-min-32-chars}
     expiration-ms: ${JWT_EXPIRATION_MS:3600000}
 
+mobile:
+  api:
+    base-url: ${MOBILE_API_BASE_URL:http://localhost:8080}
+    connect-timeout-ms: ${MOBILE_API_CONNECT_TIMEOUT_MS:3000}
+    read-timeout-ms: ${MOBILE_API_READ_TIMEOUT_MS:8000}
+
 management:
   endpoints:
     web:

@@ -8,7 +8,6 @@ import java.util.Date;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-/** 对应 backlog Item 1：JWT 登录鉴权 */
 @Component
 public class JwtUtil {
 

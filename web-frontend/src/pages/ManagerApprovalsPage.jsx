@@ -1,15 +1,15 @@
 export default function ManagerApprovalsPage() {
   return (
     <section>
-      <h2>经理审批中心</h2>
-      <p>占位页面：接收员工预订申请通知并执行批准/驳回与备注。</p>
+      <h2>Manager Approval Center</h2>
+      <p>Placeholder page: Receives employee booking request notifications and performs approval/rejection with comments.</p>
 
-      {/* TODO: 接入待办列表、历史记录、审批备注、通知中心 */}
-      <h3>功能分区（占位）</h3>
+      {/* TODO: Integrate pending list, history records, approval comments, and notification center */}
+      <h3>Function Sections (Placeholder)</h3>
       <ul>
-        <li>待办审批列表</li>
-        <li>审批历史记录</li>
-        <li>批准 / 驳回 + 备注</li>
+        <li>Pending Approval List</li>
+        <li>Approval History Records</li>
+        <li>Approve / Reject + Comments</li>
       </ul>
     </section>
   );

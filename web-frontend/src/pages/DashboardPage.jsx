@@ -4,23 +4,23 @@ export default function DashboardPage() {
   return (
     <section>
       <h2>Dashboard</h2>
-      <p>当前为占位版本，仅用于搭建模块入口和页面路由。</p>
+              <p>Current placeholder version, only for building module entries and page routes.</p>
 
       <ul>
         <li>
-          <Link to="/accounts/create">账号创建（角色权限）</Link>
+          <Link to="/accounts/create">Account Creation (Role Permissions)</Link>
         </li>
         <li>
-          <Link to="/admin/accounts">管理员账号管理</Link>
+          <Link to="/admin/accounts">Admin Account Management</Link>
         </li>
         <li>
-          <Link to="/finance/reimbursements">财务报销流程</Link>
+          <Link to="/finance/reimbursements">Financial Reimbursement Process</Link>
         </li>
         <li>
-          <Link to="/manager/approvals">经理审批中心</Link>
+          <Link to="/manager/approvals">Manager Approval Center</Link>
         </li>
         <li>
-          <Link to="/analytics">数据分析与可视化</Link>
+          <Link to="/analytics">Data Analysis and Visualization</Link>
         </li>
       </ul>
     </section>

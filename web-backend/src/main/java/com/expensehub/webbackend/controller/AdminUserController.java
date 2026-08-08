@@ -5,10 +5,7 @@ import com.expensehub.webbackend.repository.UserRepository;
 import java.util.List;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * 对应 backlog Item 2：管理员账号功能（查看、创建、编辑、禁用、启用其他账号）。
- * 目前只是骨架，后续补充 DTO、参数校验和权限细分。
- */
+// Corresponding to backlog Item 2: Administrator account functions (viewing, creating, editing, disabling, and enabling other accounts).
 @RestController
 @RequestMapping("/api/admin/users")
 public class AdminUserController {
