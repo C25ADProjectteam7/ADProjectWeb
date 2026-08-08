@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.web.bind.annotation.*;
 
+// Corresponding to backlog Item 2: Administrator account functions (viewing, creating, editing, disabling, and enabling other accounts).
 @RestController
 @RequestMapping("/api/admin/users")
 public class AdminUserController {

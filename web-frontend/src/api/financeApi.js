@@ -1,35 +1,37 @@
 import apiClient from './client.js';
 
+
 export const financeApi = {
-  listBudgets(params) {
-    return apiClient.get('/finance/budgets', { params });
+  // budget management (Item 16)
+  listBudgets(department) {
+    return apiClient.get('/finance/budgets', { params: department ? { department } : {} });
+  },
+  upsertBudget(payload) {
+    return apiClient.put('/finance/budgets', payload);
+  },
+  getBudgetAudit(budgetId) {
+    return apiClient.get(`/finance/budgets/${budgetId}/audit`);
   },
 
-  createBudget(payload) {
-    return apiClient.post('/finance/budgets', payload);
+  //Reimbursement Requests (Item 17)
+  listReimbursements(params) {
+    return apiClient.get('/finance/reimbursements', { params });
+  },
+  getReimbursement(requestId) {
+    return apiClient.get(`/finance/reimbursements/${requestId}`);
+  },
+  reviewReimbursement(requestId, payload) {
+    return apiClient.patch(`/finance/reimbursements/${requestId}/review`, payload);
+  },
+  getReimbursementAudit(requestId) {
+    return apiClient.get(`/finance/reimbursements/${requestId}/audit`);
   },
 
-  updateBudget(id, payload) {
-    return apiClient.put(`/finance/budgets/${id}`, payload);
-  },
-
-  listReimbursements() {
-    return apiClient.get('/finance/reimbursements');
-  },
-
-  createReimbursement(payload) {
-    return apiClient.post('/finance/reimbursements', payload);
-  },
-
-  updateReimbursement(id, payload) {
-    return apiClient.put(`/finance/reimbursements/${id}`, payload);
-  },
-
-  approveReimbursement(id) {
-    return apiClient.patch(`/finance/reimbursements/${id}/approve`);
-  },
-
-  rejectReimbursement(id) {
-    return apiClient.patch(`/finance/reimbursements/${id}/reject`);
+  // Export (Item 18)
+  exportReimbursements(params) {
+    return apiClient.get('/finance/reimbursements/export', {
+      params,
+      responseType: 'blob',
+    });
   },
 };
