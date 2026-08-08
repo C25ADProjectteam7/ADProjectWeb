@@ -10,6 +10,5 @@ class WebBackendApplicationTests {
 
     @Test
     void contextLoads() {
-        // 验证 Spring 容器能正常启动、所有 Bean 能正确装配
     }
 }

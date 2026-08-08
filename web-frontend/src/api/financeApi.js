@@ -1,19 +1,33 @@
 import apiClient from './client.js';
 
-// TODO: 财务流程接口占位（预算、自动标记、报销审核、导出）
+
 export const financeApi = {
-  getBudgetConfig() {
-    return apiClient.get('/finance/budget');
+  // budget management (Item 16)
+  listBudgets(department) {
+    return apiClient.get('/finance/budgets', { params: department ? { department } : {} });
   },
-  updateBudgetConfig(payload) {
-    return apiClient.put('/finance/budget', payload);
+  upsertBudget(payload) {
+    return apiClient.put('/finance/budgets', payload);
   },
+  getBudgetAudit(budgetId) {
+    return apiClient.get(`/finance/budgets/${budgetId}/audit`);
+  },
+
+  //Reimbursement Requests (Item 17)
   listReimbursements(params) {
     return apiClient.get('/finance/reimbursements', { params });
+  },
+  getReimbursement(requestId) {
+    return apiClient.get(`/finance/reimbursements/${requestId}`);
   },
   reviewReimbursement(requestId, payload) {
     return apiClient.patch(`/finance/reimbursements/${requestId}/review`, payload);
   },
+  getReimbursementAudit(requestId) {
+    return apiClient.get(`/finance/reimbursements/${requestId}/audit`);
+  },
+
+  // Export (Item 18)
   exportReimbursements(params) {
     return apiClient.get('/finance/reimbursements/export', {
       params,

@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/** 对应 backlog Item 1、2：账号创建与管理员账号功能 */
+// Corresponding to backlog Item 1、2：Account creation and administrator account functionality
 @Entity
 @Table(name = "users")
 @Getter
@@ -35,12 +35,12 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
-    /** 账号是否启用，对应 Item 2：禁用/启用其他账号 */
+    //Whether the account is enabled
     @Column(nullable = false)
     @Builder.Default
     private boolean enabled = true;
 
-    /** 连续登录失败次数，对应 Item 1：账号锁定策略 */
+    //Continuous login failure count, corresponding to Item 1: Account lockout strategy
     @Builder.Default
     private int failedLoginAttempts = 0;
 }

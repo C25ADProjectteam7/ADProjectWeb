@@ -16,7 +16,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-/** 对应 backlog Item 1、27：RBAC 鉴权、未授权请求返回 403 */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -29,7 +28,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtUtil jwtUtil)
             throws Exception {
-        http.csrf(csrf -> csrf.disable())
+        http.securityMatcher("/api/**")
+            .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(
                         sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -40,7 +40,7 @@ public class SecurityConfig {
                                         .requestMatchers("/api/admin/**")
                                         .hasRole("ADMIN")
                                         .requestMatchers("/api/finance/**")
-                                        .hasAnyRole("ADMIN", "FINANCE_STAFF")
+                                        .hasAnyRole("ADMIN", "FINANCE_STAFF", "MANAGER")
                                         .requestMatchers("/api/manager/**")
                                         .hasAnyRole("ADMIN", "MANAGER")
                                         .anyRequest()
