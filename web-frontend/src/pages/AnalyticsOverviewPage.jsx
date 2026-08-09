@@ -23,7 +23,12 @@ export default function AnalyticsOverviewPage() {
     loadData();
   }, []);
 
-  if (loading) return <section className="eh-page"><p className="eh-empty">加载中...</p></section>;
+  if (loading)
+    return (
+      <section className="eh-page">
+        <p className="eh-empty">加载中...</p>
+      </section>
+    );
 
   const totalSpend = deptExpenses.reduce((sum, d) => sum + d.totalExpense, 0);
   const totalBudget = deptExpenses.reduce((sum, d) => sum + d.budget, 0);
@@ -39,14 +44,19 @@ export default function AnalyticsOverviewPage() {
         <div className="eh-kpi-card">
           <div className="eh-kpi-label">总支出</div>
           <div className="eh-kpi-value">S${totalSpend.toLocaleString()}</div>
-          <div className="eh-kpi-note" style={{ color: totalSpend > totalBudget ? '#A93B24' : '#4C7A6B' }}>
+          <div
+            className="eh-kpi-note"
+            style={{ color: totalSpend > totalBudget ? '#A93B24' : '#4C7A6B' }}
+          >
             {totalSpend > totalBudget ? '超出总预算' : '在总预算内'}
           </div>
         </div>
         <div className="eh-kpi-card">
           <div className="eh-kpi-label">总预算</div>
           <div className="eh-kpi-value">S${totalBudget.toLocaleString()}</div>
-          <div className="eh-kpi-note" style={{ color: '#7C8698' }}>覆盖 {deptExpenses.length} 个部门</div>
+          <div className="eh-kpi-note" style={{ color: '#7C8698' }}>
+            覆盖 {deptExpenses.length} 个部门
+          </div>
         </div>
         <div className="eh-kpi-card">
           <div className="eh-kpi-label">超支部门</div>
@@ -58,7 +68,9 @@ export default function AnalyticsOverviewPage() {
         <div className="eh-kpi-card">
           <div className="eh-kpi-label">出差总次数</div>
           <div className="eh-kpi-value">{totalTrips}</div>
-          <div className="eh-kpi-note" style={{ color: '#7C8698' }}>{travelFreq.length} 名员工</div>
+          <div className="eh-kpi-note" style={{ color: '#7C8698' }}>
+            {travelFreq.length} 名员工
+          </div>
         </div>
       </div>
 
@@ -70,7 +82,9 @@ export default function AnalyticsOverviewPage() {
             <div className="eh-bar-row" key={d.department}>
               <div className="eh-bar-label">
                 <span>{d.department}</span>
-                <span className="eh-mono">S${d.totalExpense} / S${d.budget}</span>
+                <span className="eh-mono">
+                  S${d.totalExpense} / S${d.budget}
+                </span>
               </div>
               <div className="eh-bar-track">
                 <div
@@ -89,7 +103,13 @@ export default function AnalyticsOverviewPage() {
       <div className="eh-section-title">员工出差频率统计</div>
       <div className="eh-card">
         <table className="eh-table">
-          <thead><tr><th>员工</th><th>部门</th><th>出差次数</th></tr></thead>
+          <thead>
+            <tr>
+              <th>员工</th>
+              <th>部门</th>
+              <th>出差次数</th>
+            </tr>
+          </thead>
           <tbody>
             {travelFreq.map((t) => (
               <tr key={t.userId}>
@@ -104,13 +124,19 @@ export default function AnalyticsOverviewPage() {
 
       <div className="eh-section-title">预算超支警告</div>
       {alerts.length === 0 ? (
-        <div className="eh-card"><p className="eh-empty">目前没有超支的部门。</p></div>
+        <div className="eh-card">
+          <p className="eh-empty">目前没有超支的部门。</p>
+        </div>
       ) : (
         alerts.map((a) => (
           <div className="eh-alert-card" key={a.department}>
             <div>
-              <div className="eh-alert-title">{a.department} 部门超支 {a.overPercent}%</div>
-              <div className="eh-alert-sub">预算 S${a.budget} · 实际 S${a.actual}</div>
+              <div className="eh-alert-title">
+                {a.department} 部门超支 {a.overPercent}%
+              </div>
+              <div className="eh-alert-sub">
+                预算 S${a.budget} · 实际 S${a.actual}
+              </div>
             </div>
           </div>
         ))

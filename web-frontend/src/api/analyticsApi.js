@@ -1,7 +1,11 @@
 import apiClient from './client.js';
-import { mockDepartmentExpenses, mockTravelFrequency, mockBudgetAlerts } from '../mocks/analyticsMockData.js';
+import {
+  mockDepartmentExpenses,
+  mockTravelFrequency,
+  mockBudgetAlerts,
+} from '../mocks/analyticsMockData.js';
 
-const USE_MOCK = true; 
+const USE_MOCK = true;
 
 function mockResponse(data) {
   return new Promise((resolve) => setTimeout(() => resolve({ data }), 300));

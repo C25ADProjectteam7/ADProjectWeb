@@ -1,59 +1,193 @@
 :root {
-  --ink: #16213E;
-  --ink-soft: #3A4767;
-  --runway: #F4F6F5;
-  --paper: #FFFFFF;
-  --line: #E2E5E4;
-  --brass: #C89B3C;
-  --coral: #E4572E;
-  --coral-soft: #FBEAE4;
-  --sage: #4C7A6B;
-  --sage-soft: #E7F0EC;
-  --muted: #7C8698;
+  --ink: #16213e;
+  --ink-soft: #3a4767;
+  --runway: #f4f6f5;
+  --paper: #ffffff;
+  --line: #e2e5e4;
+  --brass: #c89b3c;
+  --coral: #e4572e;
+  --coral-soft: #fbeae4;
+  --sage: #4c7a6b;
+  --sage-soft: #e7f0ec;
+  --muted: #7c8698;
 }
 
 .eh-page {
-  font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+  font-family:
+    'IBM Plex Sans',
+    -apple-system,
+    sans-serif;
   color: var(--ink);
   background: var(--runway);
   padding: 28px 32px;
   border-radius: 16px;
 }
-.eh-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
-.eh-subtitle { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
-.eh-section-title { font-size: 15px; font-weight: 600; margin: 28px 0 12px 0; }
+.eh-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.eh-subtitle {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+.eh-section-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 28px 0 12px 0;
+}
 
-.eh-card { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.eh-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 20px;
+}
 
-.eh-kpi-grid { display: flex; gap: 14px; flex-wrap: wrap; }
-.eh-kpi-card { flex: 1; min-width: 160px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
-.eh-kpi-label { font-size: 11.5px; font-weight: 600; color: var(--muted); }
-.eh-kpi-value { font-family: 'IBM Plex Mono', monospace; font-size: 22px; font-weight: 600; margin-top: 6px; }
-.eh-kpi-note { font-size: 11px; margin-top: 4px; font-weight: 600; }
+.eh-kpi-grid {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.eh-kpi-card {
+  flex: 1;
+  min-width: 160px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+.eh-kpi-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.eh-kpi-value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 22px;
+  font-weight: 600;
+  margin-top: 6px;
+}
+.eh-kpi-note {
+  font-size: 11px;
+  margin-top: 4px;
+  font-weight: 600;
+}
 
-.eh-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.eh-table th { text-align: left; font-size: 11.5px; color: var(--muted); font-weight: 600; padding: 8px 10px; border-bottom: 1px solid var(--line); }
-.eh-table td { padding: 12px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
-.eh-mono { font-family: 'IBM Plex Mono', monospace; }
+.eh-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.eh-table th {
+  text-align: left;
+  font-size: 11.5px;
+  color: var(--muted);
+  font-weight: 600;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.eh-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.eh-mono {
+  font-family: 'IBM Plex Mono', monospace;
+}
 
-.eh-badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 600; }
-.eh-badge-coral { background: var(--coral-soft); color: #A93B24; }
-.eh-badge-sage { background: var(--sage-soft); color: var(--sage); }
+.eh-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.eh-badge-coral {
+  background: var(--coral-soft);
+  color: #a93b24;
+}
+.eh-badge-sage {
+  background: var(--sage-soft);
+  color: var(--sage);
+}
 
-.eh-btn { border: none; border-radius: 9px; padding: 7px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: 'IBM Plex Sans', sans-serif; }
-.eh-btn-approve { background: var(--sage); color: #fff; }
-.eh-btn-reject { background: transparent; color: var(--coral); border: 1.5px solid var(--coral-soft); }
-.eh-btn-reject:hover { background: var(--coral-soft); }
+.eh-btn {
+  border: none;
+  border-radius: 9px;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'IBM Plex Sans', sans-serif;
+}
+.eh-btn-approve {
+  background: var(--sage);
+  color: #fff;
+}
+.eh-btn-reject {
+  background: transparent;
+  color: var(--coral);
+  border: 1.5px solid var(--coral-soft);
+}
+.eh-btn-reject:hover {
+  background: var(--coral-soft);
+}
 
-.eh-input { border: 1.5px solid var(--line); border-radius: 8px; padding: 7px 10px; font-size: 12.5px; font-family: 'IBM Plex Sans', sans-serif; width: 150px; }
+.eh-input {
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 12.5px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  width: 150px;
+}
 
-.eh-bar-row { margin-bottom: 16px; }
-.eh-bar-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
-.eh-bar-track { height: 10px; background: var(--line); border-radius: 5px; overflow: hidden; }
-.eh-bar-fill { height: 100%; border-radius: 5px; }
+.eh-bar-row {
+  margin-bottom: 16px;
+}
+.eh-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.eh-bar-track {
+  height: 10px;
+  background: var(--line);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.eh-bar-fill {
+  height: 100%;
+  border-radius: 5px;
+}
 
-.eh-alert-card { display: flex; gap: 10px; align-items: flex-start; background: var(--coral-soft); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
-.eh-alert-title { font-size: 13px; font-weight: 600; color: #A93B24; }
-.eh-alert-sub { font-size: 11.5px; color: #A93B24; opacity: 0.75; margin-top: 2px; }
+.eh-alert-card {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--coral-soft);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.eh-alert-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #a93b24;
+}
+.eh-alert-sub {
+  font-size: 11.5px;
+  color: #a93b24;
+  opacity: 0.75;
+  margin-top: 2px;
+}
 
-.eh-empty { font-size: 13px; color: var(--muted); padding: 12px 0; }
+.eh-empty {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 12px 0;
+}

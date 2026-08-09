@@ -55,8 +55,18 @@ export default function ManagerApprovalsPage() {
     ]);
   }
 
-  if (loading) return <section className="eh-page"><p className="eh-empty">加载中...</p></section>;
-  if (error) return <section className="eh-page"><p className="eh-empty">{error}</p></section>;
+  if (loading)
+    return (
+      <section className="eh-page">
+        <p className="eh-empty">加载中...</p>
+      </section>
+    );
+  if (error)
+    return (
+      <section className="eh-page">
+        <p className="eh-empty">{error}</p>
+      </section>
+    );
 
   const overdueCount = pending.filter((item) => isOverdue(item.submittedAt)).length;
   const sortedPending = [...pending].sort((a, b) => {
@@ -87,9 +97,15 @@ export default function ManagerApprovalsPage() {
           <table className="eh-table">
             <thead>
               <tr>
-                <th>员工</th><th>部门</th><th>目的地</th><th>日期</th>
-                <th>申请预算</th><th>部门限额</th><th>超支情况</th>
-                <th>备注</th><th>操作</th>
+                <th>员工</th>
+                <th>部门</th>
+                <th>目的地</th>
+                <th>日期</th>
+                <th>申请预算</th>
+                <th>部门限额</th>
+                <th>超支情况</th>
+                <th>备注</th>
+                <th>操作</th>
               </tr>
             </thead>
             <tbody>
@@ -101,13 +117,19 @@ export default function ManagerApprovalsPage() {
                   <td className="eh-mono">
                     {item.startDate} ~ {item.endDate}
                     {isOverdue(item.submittedAt) && (
-                      <div><span className="eh-badge eh-badge-coral" style={{ marginTop: 4 }}>已超时</span></div>
+                      <div>
+                        <span className="eh-badge eh-badge-coral" style={{ marginTop: 4 }}>
+                          已超时
+                        </span>
+                      </div>
                     )}
                   </td>
                   <td className="eh-mono">S${item.budgetRequested}</td>
                   <td className="eh-mono">S${item.departmentBudgetLimit}</td>
                   <td>
-                    <span className={`eh-badge ${item.overBudgetPercent > 0 ? 'eh-badge-coral' : 'eh-badge-sage'}`}>
+                    <span
+                      className={`eh-badge ${item.overBudgetPercent > 0 ? 'eh-badge-coral' : 'eh-badge-sage'}`}
+                    >
                       {item.overBudgetPercent > 0 ? `超支 ${item.overBudgetPercent}%` : '预算内'}
                     </span>
                   </td>
@@ -123,8 +145,18 @@ export default function ManagerApprovalsPage() {
                     />
                   </td>
                   <td style={{ whiteSpace: 'nowrap' }}>
-                    <button className="eh-btn eh-btn-approve" onClick={() => handleDecision(item.requestId, 'APPROVED')}>批准</button>{' '}
-                    <button className="eh-btn eh-btn-reject" onClick={() => handleDecision(item.requestId, 'REJECTED')}>驳回</button>
+                    <button
+                      className="eh-btn eh-btn-approve"
+                      onClick={() => handleDecision(item.requestId, 'APPROVED')}
+                    >
+                      批准
+                    </button>{' '}
+                    <button
+                      className="eh-btn eh-btn-reject"
+                      onClick={() => handleDecision(item.requestId, 'REJECTED')}
+                    >
+                      驳回
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -137,7 +169,13 @@ export default function ManagerApprovalsPage() {
       <div className="eh-card">
         <table className="eh-table">
           <thead>
-            <tr><th>员工</th><th>目的地</th><th>结果</th><th>处理时间</th><th>备注</th></tr>
+            <tr>
+              <th>员工</th>
+              <th>目的地</th>
+              <th>结果</th>
+              <th>处理时间</th>
+              <th>备注</th>
+            </tr>
           </thead>
           <tbody>
             {history.map((item) => (
@@ -145,7 +183,9 @@ export default function ManagerApprovalsPage() {
                 <td>{item.employeeName}</td>
                 <td>{item.destination}</td>
                 <td>
-                  <span className={`eh-badge ${item.decision === 'APPROVED' ? 'eh-badge-sage' : 'eh-badge-coral'}`}>
+                  <span
+                    className={`eh-badge ${item.decision === 'APPROVED' ? 'eh-badge-sage' : 'eh-badge-coral'}`}
+                  >
                     {item.decision === 'APPROVED' ? '已批准' : '已驳回'}
                   </span>
                 </td>
