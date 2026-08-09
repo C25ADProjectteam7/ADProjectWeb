@@ -49,7 +49,6 @@ jobs:
           name: jacoco-report
           path: web-backend/target/site/jacoco
 
-  # ---------- 2. 安全与代码质量扫描（SonarQube + Snyk） ----------
   security-scan:
     runs-on: ubuntu-latest
     needs: build-and-test
@@ -74,8 +73,6 @@ jobs:
           name: jacoco-report
           path: web-backend/target/site/jacoco
 
-      # SonarQube 还没配置好之前跳过，不阻塞后面的部署。
-      # 等 SonarQube 服务器就绪、在仓库 Secrets 里填好 SONAR_TOKEN/SONAR_HOST_URL 后自动生效。
       - name: SonarQube Scan (Maven)
         if: ${{ env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' }}
         run: >
@@ -97,10 +94,6 @@ jobs:
         run: snyk test --severity-threshold=high --file=pom.xml
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        # high/critical 漏洞会让此步骤非零退出，job 失败，从而阻止合并
-        # （需在分支保护规则中把本 job 设为 required status check）
-
-  # ---------- 3. 验证 Docker 镜像可构建（仅限 main 分支） ----------
   docker-build:
     runs-on: ubuntu-latest
     needs: [build-and-test, security-scan]
@@ -120,7 +113,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ---------- 4. 部署到已配置好的服务器 ----------
   deploy:
     runs-on: ubuntu-latest
     needs: docker-build
