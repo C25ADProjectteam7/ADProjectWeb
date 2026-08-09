@@ -6,8 +6,17 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Corresponds to backlog Item 20 (Manager Approval Notifications): the yearly
+ * per-department budget cap used to decide whether a trip needs manager approval.
+ *
+ * <p>This is intentionally separate from FinanceController's /api/finance/budgets
+ * (Item 16, quarterly/annual reimbursement budgets) — different backlog item,
+ * different semantics (trip pre-approval cap vs. reimbursement spend limit) — so
+ * it lives under /api/manager/** instead of colliding with the finance route.
+ */
 @RestController
-@RequestMapping("/api/finance/budgets")
+@RequestMapping("/api/manager/budgets")
 public class DepartmentalBudgetController {
 
     private final DepartmentalBudgetService budgetService;

@@ -1,8 +1,6 @@
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import { financeApi } from '../api/financeApi.js';
 
-
-
 const CATEGORIES = ['FLIGHT', 'HOTEL', 'MEAL', 'TRANSPORT', 'OTHER'];
 const STATUSES = ['SUBMITTED', 'APPROVED', 'REJECTED', 'NEEDS_INFO'];
 const FLAG_LABELS = {
@@ -69,7 +67,6 @@ export default function FinanceReimbursementPage() {
   const [listError, setListError] = useState('');
   const [listLoading, setListLoading] = useState(false);
 
-
   const [expandedRowId, setExpandedRowId] = useState(null);
   const [expandedMode, setExpandedMode] = useState(null); // 'review' | 'audit'
   const [reviewForm, setReviewForm] = useState({ decision: 'APPROVE', comment: '' });
@@ -116,7 +113,11 @@ export default function FinanceReimbursementPage() {
   async function handleBudgetSubmit(event) {
     event.preventDefault();
     setBudgetError('');
-    if (!budgetForm.department.trim() || !budgetForm.periodLabel.trim() || budgetForm.amount === '') {
+    if (
+      !budgetForm.department.trim() ||
+      !budgetForm.periodLabel.trim() ||
+      budgetForm.amount === ''
+    ) {
       setBudgetError('Department, period label, and amount are required fields.');
       return;
     }
@@ -152,7 +153,6 @@ export default function FinanceReimbursementPage() {
     }
   }
 
-
   function handleFilterChange(field, value) {
     setFilters((prev) => ({ ...prev, [field]: value }));
     setPage(0);
@@ -176,7 +176,6 @@ export default function FinanceReimbursementPage() {
       setExporting(false);
     }
   }
-
 
   function openReview(row) {
     setExpandedRowId(row.id);
@@ -205,7 +204,9 @@ export default function FinanceReimbursementPage() {
 
   async function submitReview(requestId) {
     if (reviewForm.decision === 'REQUEST_INFO' && !reviewForm.comment.trim()) {
-      setRowActionError('When requesting additional information, please fill in the specific content that needs to be补充/modified, and employees will see this comment.');
+      setRowActionError(
+        'When requesting additional information, please fill in the specific content that needs to be补充/modified, and employees will see this comment.',
+      );
       return;
     }
     setRowActionBusy(true);
@@ -216,7 +217,9 @@ export default function FinanceReimbursementPage() {
       await loadReimbursements();
     } catch (err) {
       const upstreamMessage = err?.response?.data?.message;
-      setRowActionError(upstreamMessage || 'Failed to submit review results. Please try again later.');
+      setRowActionError(
+        upstreamMessage || 'Failed to submit review results. Please try again later.',
+      );
     } finally {
       setRowActionBusy(false);
     }
@@ -226,7 +229,8 @@ export default function FinanceReimbursementPage() {
     <section className="finance-page">
       <h2>Financial Reimbursement Process</h2>
       <p className="finance-subtitle">
-        Budget configuration, automatic compliance marking, reimbursement request review, data export to Excel.
+        Budget configuration, automatic compliance marking, reimbursement request review, data
+        export to Excel.
       </p>
 
       {/* Budget allocation*/}
@@ -315,9 +319,7 @@ export default function FinanceReimbursementPage() {
                       <span className="finance-badge finance-badge-ok">Normal</span>
                     )}
                   </td>
-                  <td>
-                    {b.updatedBy ? `${b.updatedBy} · ${formatDateTime(b.updatedAt)}` : '-'}
-                  </td>
+                  <td>{b.updatedBy ? `${b.updatedBy} · ${formatDateTime(b.updatedAt)}` : '-'}</td>
                   <td>
                     <button type="button" onClick={() => toggleBudgetAudit(b.id)}>
                       {openBudgetAuditId === b.id ? 'Collapse Records' : 'View Changes'}
@@ -348,14 +350,19 @@ export default function FinanceReimbursementPage() {
       <div className="finance-card">
         <h3>Reimbursement Requests</h3>
         <p className="finance-subtitle">
-          Data comes from the Mobile app submitted by employees. When errors are found in amount/category information, use the "Request Additional Information" button below to reject the request,
-          and employees will be able to modify it in the App and it will reappear in the pending review list — finance staff cannot directly edit the values.
+          Data comes from the Mobile app submitted by employees. When errors are found in
+          amount/category information, use the &quot;Request Additional Information&quot; button
+          below to reject the request, and employees will be able to modify it in the App and it
+          will reappear in the pending review list — finance staff cannot directly edit the values.
         </p>
 
         <div className="finance-filters">
           <label>
             Status
-            <select value={filters.status} onChange={(e) => handleFilterChange('status', e.target.value)}>
+            <select
+              value={filters.status}
+              onChange={(e) => handleFilterChange('status', e.target.value)}
+            >
               <option value="">All</option>
               {STATUSES.map((s) => (
                 <option key={s} value={s}>
@@ -499,11 +506,16 @@ export default function FinanceReimbursementPage() {
                           >
                             <option value="APPROVE">Approve</option>
                             <option value="REJECT">Reject</option>
-                            <option value="REQUEST_INFO">Request Additional Information / Modification</option>
+                            <option value="REQUEST_INFO">
+                              Request Additional Information / Modification
+                            </option>
                           </select>
                         </label>
                         <label>
-                          Comment{reviewForm.decision === 'REQUEST_INFO' ? ' (Required, Employee Will See)' : ' (Optional)'}
+                          Comment
+                          {reviewForm.decision === 'REQUEST_INFO'
+                            ? ' (Required, Employee Will See)'
+                            : ' (Optional)'}
                           <textarea
                             value={reviewForm.comment}
                             onChange={(e) =>

@@ -8,6 +8,9 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
 // The sole entry point for the finance module to interact with the Mobile backend.
+// Also used by the Manager approval module (Item 20) and analytics module (Item 23-25)
+// to read Mobile's trip data (GET /api/admin/trips), so there's one shared,
+// authenticated client instead of separate unauthenticated placeholder ones.
 
 @Component
 public class MobileExpenseClient {
@@ -23,6 +26,13 @@ public class MobileExpenseClient {
     public List<MobileExpenseDTO> listAllExpenses() {
         MobileApiResponse<List<MobileExpenseDTO>> response =
                 get("/api/admin/expenses", new ParameterizedTypeReference<>() {});
+        return response.getData() != null ? response.getData() : List.of();
+    }
+
+    /** Company-wide trip list, for the Manager approval workflow and analytics. */
+    public List<MobileTripDTO> listAllTrips() {
+        MobileApiResponse<List<MobileTripDTO>> response =
+                get("/api/admin/trips", new ParameterizedTypeReference<>() {});
         return response.getData() != null ? response.getData() : List.of();
     }
 

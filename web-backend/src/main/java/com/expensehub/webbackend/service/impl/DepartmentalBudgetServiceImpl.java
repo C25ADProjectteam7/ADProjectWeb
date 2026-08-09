@@ -3,9 +3,11 @@ package com.expensehub.webbackend.service.impl;
 import com.expensehub.webbackend.entity.DepartmentalBudget;
 import com.expensehub.webbackend.repository.DepartmentalBudgetRepository;
 import com.expensehub.webbackend.service.DepartmentalBudgetService;
-import org.springframework.stereotype.Service;
-
+import java.math.BigDecimal;
+import java.time.Year;
 import java.util.List;
+import java.util.Optional;
+import org.springframework.stereotype.Service;
 
 @Service
 public class DepartmentalBudgetServiceImpl
@@ -61,5 +63,12 @@ public class DepartmentalBudgetServiceImpl
         existing.setBudgetAmount(budget.getBudgetAmount());
 
         return budgetRepository.save(existing);
+    }
+
+    @Override
+    public Optional<BigDecimal> getLimit(String department) {
+        return budgetRepository
+                .findByDepartmentAndBudgetYear(department, Year.now().getValue())
+                .map(DepartmentalBudget::getBudgetAmount);
     }
 }

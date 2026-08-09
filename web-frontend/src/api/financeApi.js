@@ -1,6 +1,5 @@
 import apiClient from './client.js';
 
-
 export const financeApi = {
   // budget management (Item 16)
   listBudgets(department) {

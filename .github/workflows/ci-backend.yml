@@ -19,7 +19,6 @@ defaults:
     working-directory: web-backend
 
 jobs:
-  # ---------- 1. 编译 + 单元测试 + 打包 ----------
   build-and-test:
     runs-on: ubuntu-latest
     steps:

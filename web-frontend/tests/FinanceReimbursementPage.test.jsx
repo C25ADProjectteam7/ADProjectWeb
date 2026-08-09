@@ -70,14 +70,14 @@ describe('FinanceReimbursementPage', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText('Finance Reimbursement Process')).toBeInTheDocument();
+    expect(screen.getByText('Financial Reimbursement Process')).toBeInTheDocument();
 
     await waitFor(() => expect(financeApi.listBudgets).toHaveBeenCalled());
     await waitFor(() => expect(financeApi.listReimbursements).toHaveBeenCalled());
 
     expect((await screen.findAllByText('Engineering')).length).toBeGreaterThan(0);
     expect(await screen.findByText('alice')).toBeInTheDocument();
-    expect(await screen.findByText('MISSING_RECEIPT')).toBeInTheDocument();
+    expect(await screen.findByText('Missing Receipt')).toBeInTheDocument();
     expect(await screen.findByText('No Receipt')).toBeInTheDocument();
   });
 });
