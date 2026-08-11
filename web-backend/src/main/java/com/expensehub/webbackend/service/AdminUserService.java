@@ -14,4 +14,6 @@ public interface AdminUserService {
     User updateUser(Long id, UpdateUserRequest request);
 
     User updateUserStatus(Long id, boolean enabled);
+
+    User unlockUser(Long id);
 }

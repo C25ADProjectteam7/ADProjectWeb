@@ -193,6 +193,33 @@ export default function AdminAccountManagementPage() {
     }
   };
 
+  // Must match AuthServiceImpl's lockout threshold on the backend.
+  const LOCKOUT_THRESHOLD = 5;
+
+  const handleUnlock = async (account) => {
+    const confirmed = window.confirm(
+      `Unlock ${account.email}? This resets its failed-login count and re-enables it.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await adminAccountsApi.unlockAccount(account.id);
+
+      setMessage(`${account.email} has been unlocked.`);
+      setMessageType('success');
+
+      await loadAccounts();
+    } catch (error) {
+      console.error(error);
+
+      setMessage('Unable to unlock this account.');
+      setMessageType('error');
+    }
+  };
+
   return (
     <section className="account-page">
       <div className="page-header">
@@ -377,6 +404,16 @@ export default function AdminAccountManagementPage() {
                           >
                             Edit
                           </button>
+
+                          {account.failedLoginAttempts >= LOCKOUT_THRESHOLD && (
+                            <button
+                              className="success-button"
+                              onClick={() => handleUnlock(account)}
+                              title="Reset failed-login count and re-enable this account"
+                            >
+                              Unlock
+                            </button>
+                          )}
 
                           <button
                             className={account.enabled ? 'danger-button' : 'success-button'}

@@ -67,4 +67,16 @@ public class AdminUserController {
         User user = adminUserService.updateUserStatus(id, enabled);
         return UserResponse.from(user);
     }
+
+    /**
+     * Admin: unlock an account that's been locked out by too many failed
+     * login attempts (also re-enables it). Distinct from updateUserStatus
+     * because an account can be locked purely by its failed-attempt count
+     * while still technically "enabled".
+     */
+    @PostMapping("/{id}/unlock")
+    public UserResponse unlockUser(@PathVariable Long id) {
+        User user = adminUserService.unlockUser(id);
+        return UserResponse.from(user);
+    }
 }

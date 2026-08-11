@@ -121,6 +121,32 @@ public class AdminUserServiceImpl implements AdminUserService {
 
         user.setEnabled(enabled);
 
+        /*
+         * Re-enabling an account should also clear its failed-login
+         * counter. AuthServiceImpl locks login on two independent
+         * conditions (enabled == false, OR failedLoginAttempts >= 5) —
+         * without this, an admin re-enabling a locked-out account would
+         * still see it rejected at login by the second condition.
+         */
+        if (enabled) {
+            user.setFailedLoginAttempts(0);
+        }
+
+        return userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public User unlockUser(Long id) {
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "User not found"));
+
+        user.setFailedLoginAttempts(0);
+        user.setEnabled(true);
+
         return userRepository.save(user);
     }
 
