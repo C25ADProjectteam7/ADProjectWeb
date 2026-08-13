@@ -34,7 +34,6 @@ import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -52,7 +51,6 @@ public class FinanceServiceImpl implements FinanceService {
     private final ReimbursementPolicyEngine policyEngine;
     private final ReimbursementExcelExporter excelExporter;
     private final MobileExpenseClient mobileExpenseClient;
-    private final String mobileBaseUrl;
 
     public FinanceServiceImpl(
             BudgetConfigRepository budgetConfigRepository,
@@ -60,15 +58,13 @@ public class FinanceServiceImpl implements FinanceService {
             ReimbursementAuditLogRepository reimbursementAuditLogRepository,
             ReimbursementPolicyEngine policyEngine,
             ReimbursementExcelExporter excelExporter,
-            MobileExpenseClient mobileExpenseClient,
-            @Value("${mobile.api.base-url}") String mobileBaseUrl) {
+            MobileExpenseClient mobileExpenseClient) {
         this.budgetConfigRepository = budgetConfigRepository;
         this.budgetAuditLogRepository = budgetAuditLogRepository;
         this.reimbursementAuditLogRepository = reimbursementAuditLogRepository;
         this.policyEngine = policyEngine;
         this.excelExporter = excelExporter;
         this.mobileExpenseClient = mobileExpenseClient;
-        this.mobileBaseUrl = mobileBaseUrl;
     }
 
     //budget allocation
@@ -405,11 +401,22 @@ public class FinanceServiceImpl implements FinanceService {
                 r.approverName());
     }
 
+    /**
+     * Mobile's receiptUrl looks like "/uploads/receipts/2026-08-13/xxx.png".
+     * The gateway (see gateway/nginx.conf.template) proxies "/mobile-uploads/"
+     * to Mobile's "/uploads/", and since the gateway serves the frontend and
+     * this API on the same origin, a relative path is all the browser needs —
+     * no internal Docker-network IP/hostname is ever exposed to the client.
+     */
     private String buildFullReceiptUrl(String relativeUrl) {
         if (relativeUrl == null || relativeUrl.isBlank()) {
             return null;
         }
-        return mobileBaseUrl + relativeUrl;
+        String uploadsPath =
+                relativeUrl.startsWith("/uploads/")
+                        ? relativeUrl.substring("/uploads".length())
+                        : relativeUrl;
+        return "/mobile-uploads" + uploadsPath;
     }
 
     private record ResolvedExpense(
