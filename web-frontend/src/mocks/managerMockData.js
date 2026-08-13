@@ -1,6 +1,7 @@
 export const mockPendingApprovals = [
   {
     requestId: 101,
+    tripTitle: 'Regional partner sync-up',
     employeeName: 'Rachel Ong',
     department: 'Marketing',
     destination: 'Jakarta',
@@ -13,6 +14,7 @@ export const mockPendingApprovals = [
   },
   {
     requestId: 102,
+    tripTitle: 'Client onboarding workshop',
     employeeName: 'Ashley Tan',
     department: 'Engineering',
     destination: 'Bangkok',
@@ -22,6 +24,19 @@ export const mockPendingApprovals = [
     departmentBudgetLimit: 1500,
     overBudgetPercent: 20,
     submittedAt: '2026-07-30T11:05:00Z',
+  },
+  {
+    requestId: 103,
+    tripTitle: 'Q3 sales pipeline review',
+    employeeName: 'Daniel Lim',
+    department: 'Sales',
+    destination: 'Ho Chi Minh City',
+    startDate: '2026-08-25',
+    endDate: '2026-08-27',
+    budgetRequested: 1200,
+    departmentBudgetLimit: 1500,
+    overBudgetPercent: 0,
+    submittedAt: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(),
   },
 ];
 
