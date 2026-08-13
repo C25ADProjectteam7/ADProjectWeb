@@ -30,13 +30,23 @@ public class ManagerController {
 
     @PostMapping("/{id}/approve")
     public Approval approve(@PathVariable Long id, @RequestBody Map<String, String> payload) {
-        // TODO: replace placeholder managerId (1L) with the authenticated user's
-        // id once login/SecurityContext wiring is re-added in a later step.
-        return managerService.decide(id, ApprovalStatus.APPROVED, payload.get("note"), 1L);
+        return managerService.decide(
+                id,
+                ApprovalStatus.APPROVED,
+                payload.get("note"),
+                parseLong(payload.get("managerId")));
     }
 
     @PostMapping("/{id}/reject")
     public Approval reject(@PathVariable Long id, @RequestBody Map<String, String> payload) {
-        return managerService.decide(id, ApprovalStatus.REJECTED, payload.get("note"), 1L);
+        return managerService.decide(
+                id,
+                ApprovalStatus.REJECTED,
+                payload.get("note"),
+                parseLong(payload.get("managerId")));
+    }
+
+    private Long parseLong(String value) {
+        return value == null || value.isBlank() ? null : Long.valueOf(value);
     }
 }

@@ -1,9 +1,8 @@
 package com.expensehub.webbackend.entity;
 
-/** 对应 backlog Item 1：不同角色权限设置 (finance staff, manager, admin, employee) */
+// Corresponding to backlog Item 1: Different role permission settings
 public enum Role {
     ADMIN,
     FINANCE_STAFF,
-    MANAGER,
-    EMPLOYEE
+    MANAGER
 }
