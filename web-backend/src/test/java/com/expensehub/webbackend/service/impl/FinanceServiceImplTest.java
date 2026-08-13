@@ -55,8 +55,7 @@ class FinanceServiceImplTest {
                         reimbursementAuditLogRepository,
                         new ReimbursementPolicyEngine(),
                         new ReimbursementExcelExporter(),
-                        mobileExpenseClient,
-                        "http://mobile-host:8080");
+                        mobileExpenseClient);
 
         when(budgetConfigRepository.findByDepartmentAndPeriodTypeAndPeriodLabel(
                         any(), any(), any()))
@@ -107,7 +106,7 @@ class FinanceServiceImplTest {
         ReimbursementResponse r = page.getContent().get(0);
         assertThat(r.department()).isEqualTo("Engineering");
         assertThat(r.employeeName()).isEqualTo("alice");
-        assertThat(r.receiptUrl()).isEqualTo("http://mobile-host:8080/uploads/receipts/2026-02-10/abc.jpg");
+        assertThat(r.receiptUrl()).isEqualTo("/mobile-uploads/receipts/2026-02-10/abc.jpg");
     }
 
     @Test
