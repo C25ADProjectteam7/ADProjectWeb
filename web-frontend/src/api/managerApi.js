@@ -1,7 +1,7 @@
 import apiClient from './client.js';
 import { mockPendingApprovals, mockApprovalHistory } from '../mocks/managerMockData.js';
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 function mockResolve(data) {
   return new Promise((resolve) => setTimeout(() => resolve({ data }), 300));

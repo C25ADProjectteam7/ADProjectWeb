@@ -8,7 +8,7 @@ import {
   mockApprovalOutcomes,
 } from '../mocks/analyticsMockData.js';
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 function mockResolve(data) {
   return new Promise((resolve) => setTimeout(() => resolve({ data }), 300));
