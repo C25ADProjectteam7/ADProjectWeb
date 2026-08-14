@@ -12,8 +12,15 @@ import {
 } from 'chart.js';
 
 ChartJS.register(
-  CategoryScale, LinearScale, BarElement, LineElement,
-  PointElement, ArcElement, Title, Tooltip, Legend
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
 );
 
 ChartJS.defaults.font.family = "'IBM Plex Sans', sans-serif";
