@@ -64,20 +64,32 @@ public class MobileExpenseClient {
         return response.getData();
     }
 
+    /**
+     * Looks up a Mobile user's profile (name/department) for display purposes.
+     * Uses the dedicated service account token, not the current Web user's token,
+     * because Mobile's UserService.getUserById() requires the JWT subject to
+     * resolve to a real Mobile user record — see MobileAuthTokenProvider.
+     */
     public MobileUserDTO getUser(Long userId) {
         MobileApiResponse<MobileUserDTO> response =
-                get("/api/users/" + userId, new ParameterizedTypeReference<>() {});
+                get("/api/users/" + userId, new ParameterizedTypeReference<>() {},
+                        tokenProvider.serviceAccountTokenForMobile());
         return response.getData();
     }
 
     private <T> MobileApiResponse<T> get(
             String path, ParameterizedTypeReference<MobileApiResponse<T>> type) {
+        return get(path, type, tokenProvider.currentUserTokenForMobile());
+    }
+
+    private <T> MobileApiResponse<T> get(
+            String path, ParameterizedTypeReference<MobileApiResponse<T>> type, String token) {
         try {
             MobileApiResponse<T> body =
                     restClient
                             .get()
                             .uri(path)
-                            .header("Authorization", "Bearer " + tokenProvider.currentUserTokenForMobile())
+                            .header("Authorization", "Bearer " + token)
                             .retrieve()
                             .body(type);
             return requireSuccess(body);
