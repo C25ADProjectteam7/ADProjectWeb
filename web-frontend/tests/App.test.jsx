@@ -10,6 +10,6 @@ describe('App', () => {
         <App />
       </BrowserRouter>,
     );
-    expect(screen.getByText(/Smart Travel and Expense Hub/i)).toBeInTheDocument();
+    expect(screen.getByText(/Smart Travel\s*&\s*Expense Hub/i)).toBeInTheDocument();
   });
 });

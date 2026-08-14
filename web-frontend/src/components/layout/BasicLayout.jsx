@@ -16,7 +16,7 @@ const menuItems = [
   {
     label: 'Finance',
     path: '/finance/reimbursements',
-    allowedRoles: ['ADMIN', 'FINANCE_STAFF', 'MANAGER'],
+    allowedRoles: ['ADMIN', 'FINANCE_STAFF'],
   },
   {
     label: 'Manager Approvals',

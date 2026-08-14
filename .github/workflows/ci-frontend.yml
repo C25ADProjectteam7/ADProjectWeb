@@ -22,7 +22,7 @@ env:
   NODE_VERSION: '20'
 
 jobs:
-  # ---------- 1. 代码规范 + 单元测试 + 构建 ----------
+
   build-and-test:
     runs-on: ubuntu-latest
     steps:
@@ -62,7 +62,6 @@ jobs:
           name: dist
           path: web-frontend/dist
 
-  # ---------- 2. 安全与代码质量扫描（SonarQube + Snyk） ----------
   security-scan:
     runs-on: ubuntu-latest
     needs: build-and-test
@@ -72,7 +71,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # SonarQube 需要完整git历史做增量分析
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -90,9 +89,6 @@ jobs:
           name: coverage-report
           path: web-frontend/coverage
 
-      # SonarQube 还没配置好之前（缺 SONAR_TOKEN/SONAR_HOST_URL），这两步会被跳过而不是让 job 失败，
-      # 不会阻塞后面的部署。等 SonarQube 服务器就绪、在仓库 Secrets 里填好这两个值后，
-      # 这两步会自动开始生效，不需要再改这个文件。
       - name: SonarQube Scan
         if: ${{ env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' }}
         uses: SonarSource/sonarqube-scan-action@v3
@@ -116,10 +112,7 @@ jobs:
           # GitHub Actions do not apply defaults.run.working-directory to action steps.
           # Point Snyk at the frontend manifest explicitly.
           args: --file=web-frontend/package.json --severity-threshold=high
-        # 依赖或代码存在 high/critical 漏洞时，此步骤会以非零状态退出，
-        # 从而使该 job 失败，阻止 PR 合并（需在分支保护规则中设为必需检查）。
 
-  # ---------- 3. 验证 Docker 镜像可构建（仅限 main 分支） ----------
   docker-build:
     runs-on: ubuntu-latest
     needs: [build-and-test, security-scan]
@@ -139,7 +132,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ---------- 4. 部署到已配置好的服务器 ----------
   deploy:
     runs-on: ubuntu-latest
     needs: docker-build
