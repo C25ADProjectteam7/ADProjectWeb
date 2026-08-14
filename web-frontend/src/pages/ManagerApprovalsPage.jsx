@@ -34,24 +34,24 @@ export default function ManagerApprovalsPage() {
     loadData();
   }, []);
 
-  async function handleDecision(requestId, decision) {
+  async function handleDecision(id, decision) {
     setActionError(null);
-    const note = noteDrafts[requestId] || '';
-    const target = pending.find((p) => p.requestId === requestId);
+    const note = noteDrafts[id] || '';
+    const target = pending.find((p) => p.id === id);
     try {
       const action =
         decision === 'APPROVED'
-          ? managerApi.approveRequest(requestId, { note })
-          : managerApi.rejectRequest(requestId, { note });
+          ? managerApi.approveRequest(id, { note })
+          : managerApi.rejectRequest(id, { note });
       const res = await action;
 
-      setPending((prev) => prev.filter((item) => item.requestId !== requestId));
+      setPending((prev) => prev.filter((item) => item.id !== id));
       setHistory((prev) => [
         {
-          requestId,
+          id,
           employeeName: target?.employeeName,
           destination: target?.destination,
-          decision: res.data.decision,
+          decision: res.data.status,
           decidedAt: new Date().toISOString(),
           note,
         },
@@ -108,11 +108,11 @@ export default function ManagerApprovalsPage() {
             <tbody>
               {sortedPending.map((item) => (
                 <>
-                  <tr key={item.requestId}>
+                  <tr key={item.id}>
                     <td>
                       <span
                         style={{ cursor: 'pointer', textDecoration: 'underline dotted', textUnderlineOffset: 3 }}
-                        onClick={() => setExpandedId(expandedId === item.requestId ? null : item.requestId)}
+                        onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
                       >
                         {item.employeeName}
                       </span>
@@ -138,18 +138,18 @@ export default function ManagerApprovalsPage() {
                         className="eh-input"
                         type="text"
                         placeholder="Note (optional)"
-                        value={noteDrafts[item.requestId] || ''}
+                        value={noteDrafts[item.id] || ''}
                         onChange={(e) =>
-                          setNoteDrafts((prev) => ({ ...prev, [item.requestId]: e.target.value }))
+                          setNoteDrafts((prev) => ({ ...prev, [item.id]: e.target.value }))
                         }
                       />
                     </td>
                     <td style={{ whiteSpace: 'nowrap' }}>
-                      <button className="eh-btn eh-btn-approve" onClick={() => handleDecision(item.requestId, 'APPROVED')}>Approve</button>{' '}
-                      <button className="eh-btn eh-btn-reject" onClick={() => handleDecision(item.requestId, 'REJECTED')}>Reject</button>
+                      <button className="eh-btn eh-btn-approve" onClick={() => handleDecision(item.id, 'APPROVED')}>Approve</button>{' '}
+                      <button className="eh-btn eh-btn-reject" onClick={() => handleDecision(item.id, 'REJECTED')}>Reject</button>
                     </td>
                   </tr>
-                  {expandedId === item.requestId && (
+                  {expandedId === item.id && (
                     <tr>
                       <td colSpan={10} style={{ background: 'var(--runway)', padding: '14px 16px' }}>
                         <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', lineHeight: 1.8 }}>
@@ -177,7 +177,7 @@ export default function ManagerApprovalsPage() {
           </thead>
           <tbody>
             {history.map((item) => (
-              <tr key={item.requestId}>
+              <tr key={item.id}>
                 <td>{item.employeeName}</td>
                 <td>{item.destination}</td>
                 <td>
