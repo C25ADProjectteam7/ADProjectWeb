@@ -36,11 +36,9 @@ public class Approval {
     @Column(nullable = false)
     private Long mobileTripId;
 
-    private String tripTitle;
-
-    /** Set only once a manager actually approves/rejects; null while PENDING. */
     private Long managerId;
 
+    private String tripTitle;
     private String employeeName;
     private String department;
     private String destination;

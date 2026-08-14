@@ -1,34 +1,118 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { analyticsApi } from '../api/analyticsApi.js';
+import DepartmentBudgetChart from '../charts/DepartmentBudgetChart.jsx';
+import TravelRankingChart from '../charts/TravelRankingChart.jsx';
+import CategoryBreakdownChart from '../charts/CategoryBreakdownChart.jsx';
+import MonthlyTrendChart from '../charts/MonthlyTrendChart.jsx';
+import ApprovalOutcomeChart from '../charts/ApprovalOutcomeChart.jsx';
 import '../styles/theme.css';
+
+function downloadChart(ref, filename) {
+  if (!ref.current) return;
+  const url = ref.current.toBase64Image();
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+}
+
+function ChartPanel({ title, chartRef, filename, height = 220, children }) {
+  return (
+    <div>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'baseline',
+          marginBottom: '8px',
+        }}
+      >
+        <span className="eh-section-title" style={{ margin: 0 }}>{title}</span>
+        <button
+          onClick={() => downloadChart(chartRef, filename)}
+          style={{
+            fontSize: '12px',
+            color: '#3A4767',
+            textDecoration: 'underline',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: 0,
+          }}
+        >
+          Download PNG
+        </button>
+      </div>
+      <div className="eh-card" style={{ height: `${height}px`, position: 'relative' }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+const chartRow = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+  gap: '20px',
+  marginBottom: '20px',
+};
 
 export default function AnalyticsOverviewPage() {
   const [deptExpenses, setDeptExpenses] = useState([]);
   const [travelFreq, setTravelFreq] = useState([]);
   const [alerts, setAlerts] = useState([]);
+  const [categoryBreakdown, setCategoryBreakdown] = useState([]);
+  const [monthlyTrend, setMonthlyTrend] = useState([]);
+  const [approvalOutcomes, setApprovalOutcomes] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState('this_month');
+  const [expandedDept, setExpandedDept] = useState(null);
+  const [alertTransactions, setAlertTransactions] = useState({});
+
+  const deptChartRef = useRef(null);
+  const travelChartRef = useRef(null);
+  const categoryChartRef = useRef(null);
+  const trendChartRef = useRef(null);
+  const approvalChartRef = useRef(null);
 
   useEffect(() => {
     async function loadData() {
-      const [deptRes, freqRes, alertRes] = await Promise.all([
-        analyticsApi.getDepartmentExpenseComparison(),
-        analyticsApi.getEmployeeTravelFrequency(),
-        analyticsApi.getBudgetOverrunAlerts(),
+      setLoading(true);
+      const params = { period };
+      const [deptRes, freqRes, alertRes, categoryRes, trendRes, approvalRes] = await Promise.all([
+        analyticsApi.getDepartmentExpenseComparison(params),
+        analyticsApi.getEmployeeTravelFrequency(params),
+        analyticsApi.getBudgetOverrunAlerts(params),
+        analyticsApi.getExpenseCategoryBreakdown(params),
+        analyticsApi.getMonthlySpendTrend(params),
+        analyticsApi.getApprovalOutcomes(params),
       ]);
       setDeptExpenses(deptRes.data);
       setTravelFreq(freqRes.data);
       setAlerts(alertRes.data);
+      setCategoryBreakdown(categoryRes.data);
+      setMonthlyTrend(trendRes.data);
+      setApprovalOutcomes(approvalRes.data);
+      setExpandedDept(null);
+      setAlertTransactions({});
       setLoading(false);
     }
     loadData();
-  }, []);
+  }, [period]);
 
-  if (loading)
-    return (
-      <section className="eh-page">
-        <p className="eh-empty">加载中...</p>
-      </section>
-    );
+  async function toggleAlertTransactions(department) {
+    if (expandedDept === department) {
+      setExpandedDept(null);
+      return;
+    }
+    setExpandedDept(department);
+    if (alertTransactions[department] === undefined) {
+      const res = await analyticsApi.getAlertTransactions(department);
+      setAlertTransactions((prev) => ({ ...prev, [department]: res.data }));
+    }
+  }
+
+  if (loading) return <section className="eh-page"><p className="eh-empty">Loading...</p></section>;
 
   const totalSpend = deptExpenses.reduce((sum, d) => sum + d.totalExpense, 0);
   const totalBudget = deptExpenses.reduce((sum, d) => sum + d.budget, 0);
@@ -37,54 +121,61 @@ export default function AnalyticsOverviewPage() {
 
   return (
     <section className="eh-page">
-      <div className="eh-title">数据分析与可视化</div>
-      <div className="eh-subtitle">基于 Mobile 端数据的部门费用、出差频率和预算预警分析</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <div className="eh-title">Analytics & Visualization</div>
+          <div className="eh-subtitle">Department expenses, travel frequency, and budget alerts based on Mobile app data</div>
+        </div>
+        <select
+          className="eh-input"
+          value={period}
+          onChange={(e) => setPeriod(e.target.value)}
+          style={{ minWidth: 160 }}
+        >
+          <option value="this_month">This Month</option>
+          <option value="last_month">Last Month</option>
+          <option value="this_quarter">This Quarter</option>
+        </select>
+      </div>
 
       <div className="eh-kpi-grid">
         <div className="eh-kpi-card">
-          <div className="eh-kpi-label">总支出</div>
+          <div className="eh-kpi-label">Total Spend</div>
           <div className="eh-kpi-value">S${totalSpend.toLocaleString()}</div>
-          <div
-            className="eh-kpi-note"
-            style={{ color: totalSpend > totalBudget ? '#A93B24' : '#4C7A6B' }}
-          >
-            {totalSpend > totalBudget ? '超出总预算' : '在总预算内'}
+          <div className="eh-kpi-note" style={{ color: totalSpend > totalBudget ? '#A93B24' : '#4C7A6B' }}>
+            {totalSpend > totalBudget ? 'Over total budget' : 'Within total budget'}
           </div>
         </div>
         <div className="eh-kpi-card">
-          <div className="eh-kpi-label">总预算</div>
+          <div className="eh-kpi-label">Total Budget</div>
           <div className="eh-kpi-value">S${totalBudget.toLocaleString()}</div>
-          <div className="eh-kpi-note" style={{ color: '#7C8698' }}>
-            覆盖 {deptExpenses.length} 个部门
-          </div>
+          <div className="eh-kpi-note" style={{ color: '#7C8698' }}>Covers {deptExpenses.length} department{deptExpenses.length === 1 ? '' : 's'}</div>
         </div>
         <div className="eh-kpi-card">
-          <div className="eh-kpi-label">超支部门</div>
+          <div className="eh-kpi-label">Over-Budget Departments</div>
           <div className="eh-kpi-value">{alerts.length}</div>
           <div className="eh-kpi-note" style={{ color: alerts.length > 0 ? '#A93B24' : '#4C7A6B' }}>
-            {alerts.length > 0 ? '需要关注' : '暂无预警'}
+            {alerts.length > 0 ? 'Needs attention' : 'No alerts'}
           </div>
         </div>
         <div className="eh-kpi-card">
-          <div className="eh-kpi-label">出差总次数</div>
+          <div className="eh-kpi-label">Total Trips</div>
           <div className="eh-kpi-value">{totalTrips}</div>
-          <div className="eh-kpi-note" style={{ color: '#7C8698' }}>
-            {travelFreq.length} 名员工
-          </div>
+          <div className="eh-kpi-note" style={{ color: '#7C8698' }}>{travelFreq.length} employee{travelFreq.length === 1 ? '' : 's'}</div>
         </div>
       </div>
 
-      <div className="eh-section-title">部门费用对比</div>
-      <div className="eh-card">
+      <ChartPanel title="Department Expense Comparison" chartRef={deptChartRef} filename="department-expense-comparison.png" height={240}>
+        {deptExpenses.length > 0 && <DepartmentBudgetChart data={deptExpenses} chartRef={deptChartRef} />}
+      </ChartPanel>
+      <div className="eh-card" style={{ marginBottom: '20px' }}>
         {deptExpenses.map((d) => {
           const over = d.totalExpense > d.budget;
           return (
             <div className="eh-bar-row" key={d.department}>
               <div className="eh-bar-label">
                 <span>{d.department}</span>
-                <span className="eh-mono">
-                  S${d.totalExpense} / S${d.budget}
-                </span>
+                <span className="eh-mono">S${d.totalExpense} / S${d.budget}</span>
               </div>
               <div className="eh-bar-track">
                 <div
@@ -100,16 +191,41 @@ export default function AnalyticsOverviewPage() {
         })}
       </div>
 
-      <div className="eh-section-title">员工出差频率统计</div>
-      <div className="eh-card">
+      <div style={chartRow}>
+        <ChartPanel title="Expense Category Breakdown" chartRef={categoryChartRef} filename="expense-category-breakdown.png">
+          {categoryBreakdown.length > 0 && <CategoryBreakdownChart data={categoryBreakdown} chartRef={categoryChartRef} />}
+        </ChartPanel>
+        {approvalOutcomes && (
+          <ChartPanel title="Approval Outcome Summary" chartRef={approvalChartRef} filename="approval-outcome-summary.png">
+            <ApprovalOutcomeChart
+              approved={approvalOutcomes.approved}
+              rejected={approvalOutcomes.rejected}
+              pending={approvalOutcomes.pending}
+              chartRef={approvalChartRef}
+            />
+          </ChartPanel>
+        )}
+      </div>
+
+      <div style={chartRow}>
+        <ChartPanel title="Monthly Spend Trend" chartRef={trendChartRef} filename="monthly-spend-trend.png">
+          {monthlyTrend.length > 0 && <MonthlyTrendChart data={monthlyTrend} chartRef={trendChartRef} />}
+        </ChartPanel>
+        <ChartPanel title="Employee Travel Frequency" chartRef={travelChartRef} filename="employee-travel-frequency.png">
+          {travelFreq.length > 0 && <TravelRankingChart data={travelFreq} chartRef={travelChartRef} />}
+        </ChartPanel>
+      </div>
+
+      {approvalOutcomes && (
+        <div className="eh-card" style={{ marginBottom: '20px' }}>
+          <p className="eh-empty">Average turnaround time: {approvalOutcomes.avgTurnaroundHours} hours</p>
+        </div>
+      )}
+
+      <div className="eh-section-title">Employee Travel Detail</div>
+      <div className="eh-card" style={{ marginBottom: '20px' }}>
         <table className="eh-table">
-          <thead>
-            <tr>
-              <th>员工</th>
-              <th>部门</th>
-              <th>出差次数</th>
-            </tr>
-          </thead>
+          <thead><tr><th>Employee</th><th>Department</th><th>Trips</th></tr></thead>
           <tbody>
             {travelFreq.map((t) => (
               <tr key={t.userId}>
@@ -122,22 +238,45 @@ export default function AnalyticsOverviewPage() {
         </table>
       </div>
 
-      <div className="eh-section-title">预算超支警告</div>
+      <div className="eh-section-title">Budget Overrun Alerts</div>
       {alerts.length === 0 ? (
-        <div className="eh-card">
-          <p className="eh-empty">目前没有超支的部门。</p>
-        </div>
+        <div className="eh-card"><p className="eh-empty">No departments are currently over budget.</p></div>
       ) : (
         alerts.map((a) => (
-          <div className="eh-alert-card" key={a.department}>
-            <div>
-              <div className="eh-alert-title">
-                {a.department} 部门超支 {a.overPercent}%
-              </div>
-              <div className="eh-alert-sub">
-                预算 S${a.budget} · 实际 S${a.actual}
+          <div key={a.department}>
+            <div
+              className="eh-alert-card"
+              style={{ cursor: 'pointer' }}
+              onClick={() => toggleAlertTransactions(a.department)}
+            >
+              <div>
+                <div className="eh-alert-title">{a.department} is over budget by {a.overPercent}%</div>
+                <div className="eh-alert-sub">Budget S${a.budget} · Actual S${a.actual} · Click to view transactions</div>
               </div>
             </div>
+            {expandedDept === a.department && (
+              <div className="eh-card" style={{ marginTop: -8, marginBottom: 12 }}>
+                {alertTransactions[a.department] === undefined ? (
+                  <p className="eh-empty">Loading...</p>
+                ) : alertTransactions[a.department].length === 0 ? (
+                  <p className="eh-empty">No approved transactions found.</p>
+                ) : (
+                  <table className="eh-table">
+                    <thead><tr><th>Employee</th><th>Category</th><th>Amount</th><th>Date</th></tr></thead>
+                    <tbody>
+                      {alertTransactions[a.department].map((t) => (
+                        <tr key={t.id}>
+                          <td>{t.employeeName}</td>
+                          <td>{t.category}</td>
+                          <td className="eh-mono">S${t.amount}</td>
+                          <td className="eh-mono">{t.date}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
           </div>
         ))
       )}

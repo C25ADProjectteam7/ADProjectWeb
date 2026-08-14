@@ -17,6 +17,16 @@ public class MobileAuthTokenProvider {
                     "MANAGER", "MANAGER",
                     "EMPLOYEE", "EMPLOYEE");
 
+    // Dedicated Mobile-side account (registered via Mobile's own /api/auth/register)
+    // used ONLY for calls that require Mobile's UserService.getUserById() to resolve
+    // the JWT subject to a real Mobile user record. The currently-authenticated Web
+    // user's email has no corresponding Mobile account, so a token minted with that
+    // subject is rejected with "Not authenticated" even though the signature itself
+    // is trusted - Mobile's endpoint does an extra lookup-by-subject on top of
+    // signature validation. See commit message for the full diagnosis.
+    private static final String MOBILE_SERVICE_ACCOUNT_USERNAME = "web-integration-service";
+    private static final String MOBILE_SERVICE_ACCOUNT_ROLE = "EMPLOYEE";
+
     private final JwtUtil jwtUtil;
 
     public MobileAuthTokenProvider(JwtUtil jwtUtil) {
@@ -36,5 +46,14 @@ public class MobileAuthTokenProvider {
                         .orElseThrow(() -> new IllegalStateException("Authenticated user has no role"));
         String mobileRole = WEB_ROLE_TO_MOBILE_ROLE.getOrDefault(webRole, webRole);
         return jwtUtil.generateToken(email, mobileRole);
+    }
+
+    /**
+     * Token for the dedicated Mobile service account, not the current Web user.
+     * Required by MobileExpenseClient.getUser(), which Mobile only accepts from
+     * a subject that resolves to a real Mobile user record.
+     */
+    public String serviceAccountTokenForMobile() {
+        return jwtUtil.generateToken(MOBILE_SERVICE_ACCOUNT_USERNAME, MOBILE_SERVICE_ACCOUNT_ROLE);
     }
 }

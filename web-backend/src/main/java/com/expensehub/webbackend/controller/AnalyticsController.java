@@ -17,17 +17,43 @@ public class AnalyticsController {
     }
 
     @GetMapping("/department-expenses")
-    public List<Map<String, Object>> departmentExpenses() {
-        return analyticsService.getDepartmentExpenseComparison();
+    public List<Map<String, Object>> departmentExpenses(
+            @RequestParam(defaultValue = "this_month") String period) {
+        return analyticsService.getDepartmentExpenseComparison(period);
     }
 
     @GetMapping("/travel-frequency")
-    public List<Map<String, Object>> travelFrequency() {
-        return analyticsService.getEmployeeTravelFrequency();
+    public List<Map<String, Object>> travelFrequency(
+            @RequestParam(defaultValue = "this_month") String period) {
+        return analyticsService.getEmployeeTravelFrequency(period);
     }
 
     @GetMapping("/budget-alerts")
-    public List<Map<String, Object>> budgetAlerts() {
-        return analyticsService.getBudgetOverrunAlerts();
+    public List<Map<String, Object>> budgetAlerts(
+            @RequestParam(defaultValue = "this_month") String period) {
+        return analyticsService.getBudgetOverrunAlerts(period);
+    }
+
+    @GetMapping("/budget-alerts/{department}/transactions")
+    public List<Map<String, Object>> alertTransactions(@PathVariable String department) {
+        return analyticsService.getAlertTransactions(department);
+    }
+
+    @GetMapping("/expense-categories")
+    public List<Map<String, Object>> expenseCategories(
+            @RequestParam(defaultValue = "this_month") String period) {
+        return analyticsService.getExpenseCategoryBreakdown(period);
+    }
+
+    @GetMapping("/monthly-trend")
+    public List<Map<String, Object>> monthlyTrend(
+            @RequestParam(defaultValue = "this_month") String period) {
+        return analyticsService.getMonthlySpendTrend(period);
+    }
+
+    @GetMapping("/approval-outcomes")
+    public Map<String, Object> approvalOutcomes(
+            @RequestParam(defaultValue = "this_month") String period) {
+        return analyticsService.getApprovalOutcomeSummary(period);
     }
 }

@@ -2,7 +2,6 @@ import { Route, Routes } from 'react-router-dom';
 
 import BasicLayout from './components/layout/BasicLayout.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
-
 import AdminAccountManagementPage from './pages/AdminAccountManagementPage.jsx';
 import AnalyticsOverviewPage from './pages/AnalyticsOverviewPage.jsx';
 import AuthAccountCreationPage from './pages/AuthAccountCreationPage.jsx';

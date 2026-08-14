@@ -1,6 +1,7 @@
 export const mockPendingApprovals = [
   {
     requestId: 101,
+    tripTitle: 'Regional partner sync-up',
     employeeName: 'Rachel Ong',
     department: 'Marketing',
     destination: 'Jakarta',
@@ -13,6 +14,7 @@ export const mockPendingApprovals = [
   },
   {
     requestId: 102,
+    tripTitle: 'Client onboarding workshop',
     employeeName: 'Ashley Tan',
     department: 'Engineering',
     destination: 'Bangkok',
@@ -25,6 +27,7 @@ export const mockPendingApprovals = [
   },
   {
     requestId: 103,
+    tripTitle: 'Q3 sales pipeline review',
     employeeName: 'Daniel Lim',
     department: 'Sales',
     destination: 'Ho Chi Minh City',

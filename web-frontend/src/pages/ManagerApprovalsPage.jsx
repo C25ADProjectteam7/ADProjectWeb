@@ -7,12 +7,22 @@ function isOverdue(submittedAt) {
   return hoursSinceSubmit >= 48;
 }
 
+function overBudgetPercent(item) {
+  const requested = Number(item.budgetRequested);
+  const limit = Number(item.departmentBudgetLimit);
+  const hasLimit = limit > 0;
+  if (hasLimit === false || requested <= limit) return 0;
+  return Math.round(((requested - limit) / limit) * 100);
+}
+
 export default function ManagerApprovalsPage() {
   const [pending, setPending] = useState([]);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [actionError, setActionError] = useState(null);
   const [noteDrafts, setNoteDrafts] = useState({});
+  const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
     async function loadData() {
@@ -24,7 +34,7 @@ export default function ManagerApprovalsPage() {
         setPending(pendingRes.data);
         setHistory(historyRes.data);
       } catch (err) {
-        setError('加载审批数据失败，请稍后重试');
+        setError('Failed to load approval data. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -32,41 +42,36 @@ export default function ManagerApprovalsPage() {
     loadData();
   }, []);
 
-  async function handleDecision(requestId, decision) {
-    const note = noteDrafts[requestId] || '';
-    const target = pending.find((p) => p.requestId === requestId);
-    const action =
-      decision === 'APPROVED'
-        ? managerApi.approveRequest(requestId, { note })
-        : managerApi.rejectRequest(requestId, { note });
-    const res = await action;
+  async function handleDecision(id, decision) {
+    setActionError(null);
+    const note = noteDrafts[id] || '';
+    const target = pending.find((p) => p.id === id);
+    try {
+      const action =
+        decision === 'APPROVED'
+          ? managerApi.approveRequest(id, { note })
+          : managerApi.rejectRequest(id, { note });
+      const res = await action;
 
-    setPending((prev) => prev.filter((item) => item.requestId !== requestId));
-    setHistory((prev) => [
-      {
-        requestId,
-        employeeName: target?.employeeName,
-        destination: target?.destination,
-        decision: res.data.decision,
-        decidedAt: new Date().toISOString(),
-        note,
-      },
-      ...prev,
-    ]);
+      setPending((prev) => prev.filter((item) => item.id !== id));
+      setHistory((prev) => [
+        {
+          id,
+          employeeName: target?.employeeName,
+          destination: target?.destination,
+          decision: res.data.status,
+          decidedAt: new Date().toISOString(),
+          note,
+        },
+        ...prev,
+      ]);
+    } catch (err) {
+      setActionError(`Failed to submit decision for ${target?.employeeName ?? 'this request'}. Please try again.`);
+    }
   }
 
-  if (loading)
-    return (
-      <section className="eh-page">
-        <p className="eh-empty">加载中...</p>
-      </section>
-    );
-  if (error)
-    return (
-      <section className="eh-page">
-        <p className="eh-empty">{error}</p>
-      </section>
-    );
+  if (loading) return <section className="eh-page"><p className="eh-empty">Loading...</p></section>;
+  if (error) return <section className="eh-page"><p className="eh-empty">{error}</p></section>;
 
   const overdueCount = pending.filter((item) => isOverdue(item.submittedAt)).length;
   const sortedPending = [...pending].sort((a, b) => {
@@ -78,115 +83,114 @@ export default function ManagerApprovalsPage() {
 
   return (
     <section className="eh-page">
-      <div className="eh-title">经理审批中心</div>
-      <div className="eh-subtitle">员工提交预订申请后的通知、批准 / 驳回与备注</div>
+      <div className="eh-title">Manager Approval Center</div>
+      <div className="eh-subtitle">Notifications, approve / reject and notes for employee trip requests</div>
 
-      <div className="eh-section-title">待办审批列表</div>
+      <div className="eh-section-title">Pending Approvals</div>
       {overdueCount > 0 && (
         <div className="eh-alert-card">
           <div>
-            <div className="eh-alert-title">{overdueCount} 笔申请已超过 48 小时未处理</div>
-            <div className="eh-alert-sub">建议优先处理下方标记为“已超时”的申请</div>
+            <div className="eh-alert-title">{overdueCount} request(s) overdue by more than 48 hours</div>
+            <div className="eh-alert-sub">Requests marked "Overdue" below should be prioritized</div>
           </div>
+        </div>
+      )}
+      {actionError && (
+        <div className="eh-alert-card" style={{ marginBottom: 14 }}>
+          <div><div className="eh-alert-title">{actionError}</div></div>
         </div>
       )}
       <div className="eh-card">
         {sortedPending.length === 0 ? (
-          <p className="eh-empty">暂无待处理的审批申请。</p>
+          <p className="eh-empty">No pending approvals right now.</p>
         ) : (
           <table className="eh-table">
             <thead>
               <tr>
-                <th>员工</th>
-                <th>部门</th>
-                <th>目的地</th>
-                <th>日期</th>
-                <th>申请预算</th>
-                <th>部门限额</th>
-                <th>超支情况</th>
-                <th>备注</th>
-                <th>操作</th>
+                <th>Employee</th><th>Department</th><th>Destination</th><th>Dates</th>
+                <th>Submitted</th>
+                <th>Requested</th><th>Dept. Limit</th><th>Status</th>
+                <th>Note</th><th>Action</th>
               </tr>
             </thead>
             <tbody>
               {sortedPending.map((item) => (
-                <tr key={item.requestId}>
-                  <td>{item.employeeName}</td>
-                  <td>{item.department}</td>
-                  <td>{item.destination}</td>
-                  <td className="eh-mono">
-                    {item.startDate} ~ {item.endDate}
-                    {isOverdue(item.submittedAt) && (
-                      <div>
-                        <span className="eh-badge eh-badge-coral" style={{ marginTop: 4 }}>
-                          已超时
-                        </span>
-                      </div>
-                    )}
-                  </td>
-                  <td className="eh-mono">S${item.budgetRequested}</td>
-                  <td className="eh-mono">S${item.departmentBudgetLimit}</td>
-                  <td>
-                    <span
-                      className={`eh-badge ${item.overBudgetPercent > 0 ? 'eh-badge-coral' : 'eh-badge-sage'}`}
-                    >
-                      {item.overBudgetPercent > 0 ? `超支 ${item.overBudgetPercent}%` : '预算内'}
-                    </span>
-                  </td>
-                  <td>
-                    <input
-                      className="eh-input"
-                      type="text"
-                      placeholder="备注（可选）"
-                      value={noteDrafts[item.requestId] || ''}
-                      onChange={(e) =>
-                        setNoteDrafts((prev) => ({ ...prev, [item.requestId]: e.target.value }))
-                      }
-                    />
-                  </td>
-                  <td style={{ whiteSpace: 'nowrap' }}>
-                    <button
-                      className="eh-btn eh-btn-approve"
-                      onClick={() => handleDecision(item.requestId, 'APPROVED')}
-                    >
-                      批准
-                    </button>{' '}
-                    <button
-                      className="eh-btn eh-btn-reject"
-                      onClick={() => handleDecision(item.requestId, 'REJECTED')}
-                    >
-                      驳回
-                    </button>
-                  </td>
-                </tr>
+                <>
+                  <tr key={item.id}>
+                    <td>
+                      <span
+                        style={{ cursor: 'pointer', textDecoration: 'underline dotted', textUnderlineOffset: 3 }}
+                        onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
+                      >
+                        {item.employeeName}
+                      </span>
+                    </td>
+                    <td>{item.department}</td>
+                    <td>{item.destination}</td>
+                    <td className="eh-mono">{item.startDate} ~ {item.endDate}</td>
+                    <td className="eh-mono" style={{ fontSize: 11.5 }}>
+                      {new Date(item.submittedAt).toLocaleString()}
+                      {isOverdue(item.submittedAt) && (
+                        <div><span className="eh-badge eh-badge-coral" style={{ marginTop: 4 }}>Overdue</span></div>
+                      )}
+                    </td>
+                    <td className="eh-mono">S${item.budgetRequested}</td>
+                    <td className="eh-mono">S${item.departmentBudgetLimit}</td>
+                    <td>
+                      <span className={`eh-badge ${overBudgetPercent(item) > 0 ? 'eh-badge-coral' : 'eh-badge-sage'}`}>
+                        {overBudgetPercent(item) > 0 ? `+${overBudgetPercent(item)}% over` : 'Within budget'}
+                      </span>
+                    </td>
+                    <td>
+                      <input
+                        className="eh-input"
+                        type="text"
+                        placeholder="Note (optional)"
+                        value={noteDrafts[item.id] || ''}
+                        onChange={(e) =>
+                          setNoteDrafts((prev) => ({ ...prev, [item.id]: e.target.value }))
+                        }
+                      />
+                    </td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      <button className="eh-btn eh-btn-approve" onClick={() => handleDecision(item.id, 'APPROVED')}>Approve</button>{' '}
+                      <button className="eh-btn eh-btn-reject" onClick={() => handleDecision(item.id, 'REJECTED')}>Reject</button>
+                    </td>
+                  </tr>
+                  {expandedId === item.id && (
+                    <tr>
+                      <td colSpan={10} style={{ background: 'var(--runway)', padding: '14px 16px' }}>
+                        <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', lineHeight: 1.8 }}>
+                          <div><b>Trip purpose:</b> {item.tripTitle || '(not provided)'}</div>
+                          <div><b>Submitted:</b> {new Date(item.submittedAt).toLocaleString()}</div>
+                          <div style={{ marginTop: 6, fontSize: 11, color: 'var(--muted)' }}>
+                            Receipts and reimbursement details are reviewed after the trip in the Reimbursement Review module (Task 3). This stage only approves the pre-trip budget request.
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
               ))}
             </tbody>
           </table>
         )}
       </div>
 
-      <div className="eh-section-title">审批历史记录</div>
+      <div className="eh-section-title">Approval History</div>
       <div className="eh-card">
         <table className="eh-table">
           <thead>
-            <tr>
-              <th>员工</th>
-              <th>目的地</th>
-              <th>结果</th>
-              <th>处理时间</th>
-              <th>备注</th>
-            </tr>
+            <tr><th>Employee</th><th>Destination</th><th>Decision</th><th>Decided At</th><th>Note</th></tr>
           </thead>
           <tbody>
             {history.map((item) => (
-              <tr key={item.requestId}>
+              <tr key={item.id}>
                 <td>{item.employeeName}</td>
                 <td>{item.destination}</td>
                 <td>
-                  <span
-                    className={`eh-badge ${item.decision === 'APPROVED' ? 'eh-badge-sage' : 'eh-badge-coral'}`}
-                  >
-                    {item.decision === 'APPROVED' ? '已批准' : '已驳回'}
+                  <span className={`eh-badge ${item.decision === 'APPROVED' ? 'eh-badge-sage' : 'eh-badge-coral'}`}>
+                    {item.decision === 'APPROVED' ? 'Approved' : 'Rejected'}
                   </span>
                 </td>
                 <td className="eh-mono">{new Date(item.decidedAt).toLocaleString()}</td>
