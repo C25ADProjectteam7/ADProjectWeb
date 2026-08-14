@@ -82,7 +82,7 @@ jobs:
 
       - name: SonarQube skipped notice
         if: ${{ env.SONAR_TOKEN == '' || env.SONAR_HOST_URL == '' }}
-        run: echo "::notice::SONAR_TOKEN/SONAR_HOST_URL 尚未配置，本次跳过 SonarQube 扫描（临时状态）。"
+        run: echo "::notice::SONAR_TOKEN/SONAR_HOST_URL have not been set, skipping SonarQube scan."
 
       # Run the CLI on the GitHub runner so Maven uses the JDK configured above.
       # The Docker-based snyk/actions/maven action receives the runner's JAVA_HOME,

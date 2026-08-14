@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import PropTypes from 'prop-types';
 import { analyticsApi } from '../api/analyticsApi.js';
 import DepartmentBudgetChart from '../charts/DepartmentBudgetChart.jsx';
 import TravelRankingChart from '../charts/TravelRankingChart.jsx';
@@ -27,7 +28,9 @@ function ChartPanel({ title, chartRef, filename, height = 220, children }) {
           marginBottom: '8px',
         }}
       >
-        <span className="eh-section-title" style={{ margin: 0 }}>{title}</span>
+        <span className="eh-section-title" style={{ margin: 0 }}>
+          {title}
+        </span>
         <button
           onClick={() => downloadChart(chartRef, filename)}
           style={{
@@ -49,6 +52,14 @@ function ChartPanel({ title, chartRef, filename, height = 220, children }) {
     </div>
   );
 }
+
+ChartPanel.propTypes = {
+  title: PropTypes.string.isRequired,
+  chartRef: PropTypes.object.isRequired,
+  filename: PropTypes.string.isRequired,
+  height: PropTypes.number,
+  children: PropTypes.node,
+};
 
 const chartRow = {
   display: 'grid',
@@ -112,7 +123,12 @@ export default function AnalyticsOverviewPage() {
     }
   }
 
-  if (loading) return <section className="eh-page"><p className="eh-empty">Loading...</p></section>;
+  if (loading)
+    return (
+      <section className="eh-page">
+        <p className="eh-empty">Loading...</p>
+      </section>
+    );
 
   const totalSpend = deptExpenses.reduce((sum, d) => sum + d.totalExpense, 0);
   const totalBudget = deptExpenses.reduce((sum, d) => sum + d.budget, 0);
@@ -124,7 +140,9 @@ export default function AnalyticsOverviewPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <div className="eh-title">Analytics & Visualization</div>
-          <div className="eh-subtitle">Department expenses, travel frequency, and budget alerts based on Mobile app data</div>
+          <div className="eh-subtitle">
+            Department expenses, travel frequency, and budget alerts based on Mobile app data
+          </div>
         </div>
         <select
           className="eh-input"
@@ -142,14 +160,19 @@ export default function AnalyticsOverviewPage() {
         <div className="eh-kpi-card">
           <div className="eh-kpi-label">Total Spend</div>
           <div className="eh-kpi-value">S${totalSpend.toLocaleString()}</div>
-          <div className="eh-kpi-note" style={{ color: totalSpend > totalBudget ? '#A93B24' : '#4C7A6B' }}>
+          <div
+            className="eh-kpi-note"
+            style={{ color: totalSpend > totalBudget ? '#A93B24' : '#4C7A6B' }}
+          >
             {totalSpend > totalBudget ? 'Over total budget' : 'Within total budget'}
           </div>
         </div>
         <div className="eh-kpi-card">
           <div className="eh-kpi-label">Total Budget</div>
           <div className="eh-kpi-value">S${totalBudget.toLocaleString()}</div>
-          <div className="eh-kpi-note" style={{ color: '#7C8698' }}>Covers {deptExpenses.length} department{deptExpenses.length === 1 ? '' : 's'}</div>
+          <div className="eh-kpi-note" style={{ color: '#7C8698' }}>
+            Covers {deptExpenses.length} department{deptExpenses.length === 1 ? '' : 's'}
+          </div>
         </div>
         <div className="eh-kpi-card">
           <div className="eh-kpi-label">Over-Budget Departments</div>
@@ -161,12 +184,21 @@ export default function AnalyticsOverviewPage() {
         <div className="eh-kpi-card">
           <div className="eh-kpi-label">Total Trips</div>
           <div className="eh-kpi-value">{totalTrips}</div>
-          <div className="eh-kpi-note" style={{ color: '#7C8698' }}>{travelFreq.length} employee{travelFreq.length === 1 ? '' : 's'}</div>
+          <div className="eh-kpi-note" style={{ color: '#7C8698' }}>
+            {travelFreq.length} employee{travelFreq.length === 1 ? '' : 's'}
+          </div>
         </div>
       </div>
 
-      <ChartPanel title="Department Expense Comparison" chartRef={deptChartRef} filename="department-expense-comparison.png" height={240}>
-        {deptExpenses.length > 0 && <DepartmentBudgetChart data={deptExpenses} chartRef={deptChartRef} />}
+      <ChartPanel
+        title="Department Expense Comparison"
+        chartRef={deptChartRef}
+        filename="department-expense-comparison.png"
+        height={240}
+      >
+        {deptExpenses.length > 0 && (
+          <DepartmentBudgetChart data={deptExpenses} chartRef={deptChartRef} />
+        )}
       </ChartPanel>
       <div className="eh-card" style={{ marginBottom: '20px' }}>
         {deptExpenses.map((d) => {
@@ -175,7 +207,9 @@ export default function AnalyticsOverviewPage() {
             <div className="eh-bar-row" key={d.department}>
               <div className="eh-bar-label">
                 <span>{d.department}</span>
-                <span className="eh-mono">S${d.totalExpense} / S${d.budget}</span>
+                <span className="eh-mono">
+                  S${d.totalExpense} / S${d.budget}
+                </span>
               </div>
               <div className="eh-bar-track">
                 <div
@@ -192,11 +226,21 @@ export default function AnalyticsOverviewPage() {
       </div>
 
       <div style={chartRow}>
-        <ChartPanel title="Expense Category Breakdown" chartRef={categoryChartRef} filename="expense-category-breakdown.png">
-          {categoryBreakdown.length > 0 && <CategoryBreakdownChart data={categoryBreakdown} chartRef={categoryChartRef} />}
+        <ChartPanel
+          title="Expense Category Breakdown"
+          chartRef={categoryChartRef}
+          filename="expense-category-breakdown.png"
+        >
+          {categoryBreakdown.length > 0 && (
+            <CategoryBreakdownChart data={categoryBreakdown} chartRef={categoryChartRef} />
+          )}
         </ChartPanel>
         {approvalOutcomes && (
-          <ChartPanel title="Approval Outcome Summary" chartRef={approvalChartRef} filename="approval-outcome-summary.png">
+          <ChartPanel
+            title="Approval Outcome Summary"
+            chartRef={approvalChartRef}
+            filename="approval-outcome-summary.png"
+          >
             <ApprovalOutcomeChart
               approved={approvalOutcomes.approved}
               rejected={approvalOutcomes.rejected}
@@ -208,24 +252,44 @@ export default function AnalyticsOverviewPage() {
       </div>
 
       <div style={chartRow}>
-        <ChartPanel title="Monthly Spend Trend" chartRef={trendChartRef} filename="monthly-spend-trend.png">
-          {monthlyTrend.length > 0 && <MonthlyTrendChart data={monthlyTrend} chartRef={trendChartRef} />}
+        <ChartPanel
+          title="Monthly Spend Trend"
+          chartRef={trendChartRef}
+          filename="monthly-spend-trend.png"
+        >
+          {monthlyTrend.length > 0 && (
+            <MonthlyTrendChart data={monthlyTrend} chartRef={trendChartRef} />
+          )}
         </ChartPanel>
-        <ChartPanel title="Employee Travel Frequency" chartRef={travelChartRef} filename="employee-travel-frequency.png">
-          {travelFreq.length > 0 && <TravelRankingChart data={travelFreq} chartRef={travelChartRef} />}
+        <ChartPanel
+          title="Employee Travel Frequency"
+          chartRef={travelChartRef}
+          filename="employee-travel-frequency.png"
+        >
+          {travelFreq.length > 0 && (
+            <TravelRankingChart data={travelFreq} chartRef={travelChartRef} />
+          )}
         </ChartPanel>
       </div>
 
       {approvalOutcomes && (
         <div className="eh-card" style={{ marginBottom: '20px' }}>
-          <p className="eh-empty">Average turnaround time: {approvalOutcomes.avgTurnaroundHours} hours</p>
+          <p className="eh-empty">
+            Average turnaround time: {approvalOutcomes.avgTurnaroundHours} hours
+          </p>
         </div>
       )}
 
       <div className="eh-section-title">Employee Travel Detail</div>
       <div className="eh-card" style={{ marginBottom: '20px' }}>
         <table className="eh-table">
-          <thead><tr><th>Employee</th><th>Department</th><th>Trips</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Department</th>
+              <th>Trips</th>
+            </tr>
+          </thead>
           <tbody>
             {travelFreq.map((t) => (
               <tr key={t.userId}>
@@ -240,7 +304,9 @@ export default function AnalyticsOverviewPage() {
 
       <div className="eh-section-title">Budget Overrun Alerts</div>
       {alerts.length === 0 ? (
-        <div className="eh-card"><p className="eh-empty">No departments are currently over budget.</p></div>
+        <div className="eh-card">
+          <p className="eh-empty">No departments are currently over budget.</p>
+        </div>
       ) : (
         alerts.map((a) => (
           <div key={a.department}>
@@ -250,8 +316,12 @@ export default function AnalyticsOverviewPage() {
               onClick={() => toggleAlertTransactions(a.department)}
             >
               <div>
-                <div className="eh-alert-title">{a.department} is over budget by {a.overPercent}%</div>
-                <div className="eh-alert-sub">Budget S${a.budget} · Actual S${a.actual} · Click to view transactions</div>
+                <div className="eh-alert-title">
+                  {a.department} is over budget by {a.overPercent}%
+                </div>
+                <div className="eh-alert-sub">
+                  Budget S${a.budget} · Actual S${a.actual} · Click to view transactions
+                </div>
               </div>
             </div>
             {expandedDept === a.department && (
@@ -262,7 +332,14 @@ export default function AnalyticsOverviewPage() {
                   <p className="eh-empty">No approved transactions found.</p>
                 ) : (
                   <table className="eh-table">
-                    <thead><tr><th>Employee</th><th>Category</th><th>Amount</th><th>Date</th></tr></thead>
+                    <thead>
+                      <tr>
+                        <th>Employee</th>
+                        <th>Category</th>
+                        <th>Amount</th>
+                        <th>Date</th>
+                      </tr>
+                    </thead>
                     <tbody>
                       {alertTransactions[a.department].map((t) => (
                         <tr key={t.id}>

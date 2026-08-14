@@ -1,14 +1,23 @@
-export function buildInsights({ deptExpenses, alerts, monthlyTrend, categories, approvalOutcomes }) {
+// `alerts` is accepted for API-shape consistency with the analytics response
+// but isn't used in any insight yet; prefixed with `_` so eslint's
+// no-unused-vars (argsIgnorePattern: '^_') doesn't flag it.
+export function buildInsights({
+  deptExpenses,
+  alerts: _alerts,
+  monthlyTrend,
+  categories,
+  approvalOutcomes,
+}) {
   const insights = [];
 
   const overBudget = deptExpenses
     .filter((d) => d.totalExpense > d.budget)
-    .sort((a, b) => (b.totalExpense - b.budget) - (a.totalExpense - a.budget));
+    .sort((a, b) => b.totalExpense - b.budget - (a.totalExpense - a.budget));
   if (overBudget.length > 0) {
     const worst = overBudget[0];
     const pct = Math.round(((worst.totalExpense - worst.budget) / worst.budget) * 100);
     insights.push(
-      `${worst.department} is the most over budget, exceeding its S$${worst.budget.toLocaleString()} limit by ${pct}% (S$${(worst.totalExpense - worst.budget).toLocaleString()}).`
+      `${worst.department} is the most over budget, exceeding its S$${worst.budget.toLocaleString()} limit by ${pct}% (S$${(worst.totalExpense - worst.budget).toLocaleString()}).`,
     );
   } else {
     insights.push('All departments are currently within their approved budget.');
@@ -20,7 +29,7 @@ export function buildInsights({ deptExpenses, alerts, monthlyTrend, categories, 
     const change = ((last.amount - prev.amount) / prev.amount) * 100;
     const direction = change >= 0 ? 'up' : 'down';
     insights.push(
-      `Spend in ${last.month} is ${direction} ${Math.abs(Math.round(change))}% from the previous month (S$${prev.amount.toLocaleString()} → S$${last.amount.toLocaleString()}).`
+      `Spend in ${last.month} is ${direction} ${Math.abs(Math.round(change))}% from the previous month (S$${prev.amount.toLocaleString()} → S$${last.amount.toLocaleString()}).`,
     );
   }
 
@@ -28,7 +37,9 @@ export function buildInsights({ deptExpenses, alerts, monthlyTrend, categories, 
     const total = categories.reduce((sum, c) => sum + c.amount, 0);
     const top = [...categories].sort((a, b) => b.amount - a.amount)[0];
     const share = Math.round((top.amount / total) * 100);
-    insights.push(`${top.category} is the largest expense category, making up ${share}% of approved spend.`);
+    insights.push(
+      `${top.category} is the largest expense category, making up ${share}% of approved spend.`,
+    );
   }
 
   if (approvalOutcomes) {
@@ -37,7 +48,9 @@ export function buildInsights({ deptExpenses, alerts, monthlyTrend, categories, 
     if (decided > 0) {
       const rejectRate = Math.round((rejected / decided) * 100);
       if (rejectRate >= 25) {
-        insights.push(`${rejectRate}% of decided requests have been rejected — worth reviewing whether budget limits need adjusting.`);
+        insights.push(
+          `${rejectRate}% of decided requests have been rejected — worth reviewing whether budget limits need adjusting.`,
+        );
       }
     }
   }

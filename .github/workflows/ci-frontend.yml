@@ -102,7 +102,7 @@ jobs:
 
       - name: SonarQube skipped notice
         if: ${{ env.SONAR_TOKEN == '' || env.SONAR_HOST_URL == '' }}
-        run: echo "::notice::SONAR_TOKEN/SONAR_HOST_URL 尚未配置，本次跳过 SonarQube 扫描（临时状态，待 SonarQube 服务器就绪后配置 Secrets 即可自动启用）。"
+        run: echo "::notice::SONAR_TOKEN/SONAR_HOST_URL have not been set, skipping SonarQube scan."
 
       - name: Snyk dependency vulnerability scan
         uses: snyk/actions/node@master

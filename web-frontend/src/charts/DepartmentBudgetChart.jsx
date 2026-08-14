@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { Bar } from 'react-chartjs-2';
 import '../charts/chartSetup.js';
 
@@ -12,7 +13,12 @@ export default function DepartmentBudgetChart({ data, chartRef }) {
   const chartData = {
     labels: data.map((d) => d.department),
     datasets: [
-      { label: 'Budget', data: data.map((d) => d.budget), backgroundColor: '#E2E5E4', borderRadius: 4 },
+      {
+        label: 'Budget',
+        data: data.map((d) => d.budget),
+        backgroundColor: '#E2E5E4',
+        borderRadius: 4,
+      },
       {
         label: 'Actual spend',
         data: data.map((d) => d.totalExpense),
@@ -30,3 +36,14 @@ export default function DepartmentBudgetChart({ data, chartRef }) {
   };
   return <Bar ref={chartRef} data={chartData} options={options} />;
 }
+
+DepartmentBudgetChart.propTypes = {
+  data: PropTypes.arrayOf(
+    PropTypes.shape({
+      department: PropTypes.string,
+      budget: PropTypes.number,
+      totalExpense: PropTypes.number,
+    }),
+  ).isRequired,
+  chartRef: PropTypes.object,
+};

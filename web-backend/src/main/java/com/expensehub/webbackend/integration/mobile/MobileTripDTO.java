@@ -3,9 +3,9 @@ package com.expensehub.webbackend.integration.mobile;
 import java.math.BigDecimal;
 
 /**
- * 对应 Mobile 组 com.team7.mobile.common.dto.TripDTO，供 Manager 审批模块 (Item 20)
- * 和数据可视化模块 (Item 23-25) 使用。日期字段沿用 Mobile 返回的字符串形式，
- * 由调用方按需 parse。
+ * for manager approval notifications (Item 20)
+ * and data visualization module (Item 23-25). Date fields use the string format returned by Mobile,
+ * which is parsed by the caller as needed.
  */
 public class MobileTripDTO {
 
