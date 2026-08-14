@@ -7,6 +7,14 @@ function isOverdue(submittedAt) {
   return hoursSinceSubmit >= 48;
 }
 
+function overBudgetPercent(item) {
+  const requested = Number(item.budgetRequested);
+  const limit = Number(item.departmentBudgetLimit);
+  const hasLimit = limit > 0;
+  if (hasLimit === false || requested <= limit) return 0;
+  return Math.round(((requested - limit) / limit) * 100);
+}
+
 export default function ManagerApprovalsPage() {
   const [pending, setPending] = useState([]);
   const [history, setHistory] = useState([]);
@@ -129,8 +137,8 @@ export default function ManagerApprovalsPage() {
                     <td className="eh-mono">S${item.budgetRequested}</td>
                     <td className="eh-mono">S${item.departmentBudgetLimit}</td>
                     <td>
-                      <span className={`eh-badge ${item.overBudgetPercent > 0 ? 'eh-badge-coral' : 'eh-badge-sage'}`}>
-                        {item.overBudgetPercent > 0 ? `+${item.overBudgetPercent}% over` : 'Within budget'}
+                      <span className={`eh-badge ${overBudgetPercent(item) > 0 ? 'eh-badge-coral' : 'eh-badge-sage'}`}>
+                        {overBudgetPercent(item) > 0 ? `+${overBudgetPercent(item)}% over` : 'Within budget'}
                       </span>
                     </td>
                     <td>
