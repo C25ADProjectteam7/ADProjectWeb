@@ -65,6 +65,8 @@ export default function AnalyticsOverviewPage() {
   const [monthlyTrend, setMonthlyTrend] = useState([]);
   const [approvalOutcomes, setApprovalOutcomes] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [expandedDept, setExpandedDept] = useState(null);
+  const [alertTransactions, setAlertTransactions] = useState({});
 
   const deptChartRef = useRef(null);
   const travelChartRef = useRef(null);
@@ -92,6 +94,18 @@ export default function AnalyticsOverviewPage() {
     }
     loadData();
   }, []);
+
+  async function toggleAlertTransactions(department) {
+    if (expandedDept === department) {
+      setExpandedDept(null);
+      return;
+    }
+    setExpandedDept(department);
+    if (alertTransactions[department] === undefined) {
+      const res = await analyticsApi.getAlertTransactions(department);
+      setAlertTransactions((prev) => ({ ...prev, [department]: res.data }));
+    }
+  }
 
   if (loading) return <section className="eh-page"><p className="eh-empty">Loading...</p></section>;
 
@@ -210,11 +224,40 @@ export default function AnalyticsOverviewPage() {
         <div className="eh-card"><p className="eh-empty">No departments are currently over budget.</p></div>
       ) : (
         alerts.map((a) => (
-          <div className="eh-alert-card" key={a.department}>
-            <div>
-              <div className="eh-alert-title">{a.department} is over budget by {a.overPercent}%</div>
-              <div className="eh-alert-sub">Budget S${a.budget} · Actual S${a.actual}</div>
+          <div key={a.department}>
+            <div
+              className="eh-alert-card"
+              style={{ cursor: 'pointer' }}
+              onClick={() => toggleAlertTransactions(a.department)}
+            >
+              <div>
+                <div className="eh-alert-title">{a.department} is over budget by {a.overPercent}%</div>
+                <div className="eh-alert-sub">Budget S${a.budget} · Actual S${a.actual} · Click to view transactions</div>
+              </div>
             </div>
+            {expandedDept === a.department && (
+              <div className="eh-card" style={{ marginTop: -8, marginBottom: 12 }}>
+                {alertTransactions[a.department] === undefined ? (
+                  <p className="eh-empty">Loading...</p>
+                ) : alertTransactions[a.department].length === 0 ? (
+                  <p className="eh-empty">No approved transactions found.</p>
+                ) : (
+                  <table className="eh-table">
+                    <thead><tr><th>Employee</th><th>Category</th><th>Amount</th><th>Date</th></tr></thead>
+                    <tbody>
+                      {alertTransactions[a.department].map((t) => (
+                        <tr key={t.id}>
+                          <td>{t.employeeName}</td>
+                          <td>{t.category}</td>
+                          <td className="eh-mono">S${t.amount}</td>
+                          <td className="eh-mono">{t.date}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
           </div>
         ))
       )}

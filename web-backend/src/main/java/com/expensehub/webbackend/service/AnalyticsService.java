@@ -127,6 +127,30 @@ public class AnalyticsService {
                 .collect(Collectors.toList());
     }
 
+    /** Approved-expense line items for a department, for drilling down from a budget alert. */
+    public List<Map<String, Object>> getAlertTransactions(String department) {
+        List<MobileExpenseDTO> approvedExpenses = mobileExpenseClient.listAllExpenses().stream()
+                .filter(e -> "APPROVED".equals(e.getStatus()))
+                .toList();
+
+        Map<Long, MobileUserDTO> userCache = buildUserCache(
+                approvedExpenses.stream().map(MobileExpenseDTO::getUserId).toList());
+
+        return approvedExpenses.stream()
+                .filter(e -> department.equals(departmentOf(e.getUserId(), userCache)))
+                .map(e -> {
+                    MobileUserDTO user = userCache.get(e.getUserId());
+                    return Map.<String, Object>of(
+                            "id", e.getId(),
+                            "employeeName", user != null ? user.getUsername() : "Unknown",
+                            "category", e.getCategory(),
+                            "amount", e.getAmount(),
+                            "date", e.getSubmittedAt().toLocalDate().toString()
+                    );
+                })
+                .collect(Collectors.toList());
+    }
+
     public List<Map<String, Object>> getExpenseCategoryBreakdown() {
         List<MobileExpenseDTO> approvedExpenses = mobileExpenseClient.listAllExpenses().stream()
                 .filter(e -> "APPROVED".equals(e.getStatus()))

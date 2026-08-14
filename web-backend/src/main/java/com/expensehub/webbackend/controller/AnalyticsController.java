@@ -31,6 +31,11 @@ public class AnalyticsController {
         return analyticsService.getBudgetOverrunAlerts();
     }
 
+    @GetMapping("/budget-alerts/{department}/transactions")
+    public List<Map<String, Object>> alertTransactions(@PathVariable String department) {
+        return analyticsService.getAlertTransactions(department);
+    }
+
     @GetMapping("/expense-categories")
     public List<Map<String, Object>> expenseCategories() {
         return analyticsService.getExpenseCategoryBreakdown();
