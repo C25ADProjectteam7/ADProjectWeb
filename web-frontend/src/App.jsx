@@ -30,8 +30,8 @@ export default function App() {
             <Route path="admin/accounts/create" element={<AuthAccountCreationPage />} />
           </Route>
 
-          {/* Finance / Manager / Admin */}
-          <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'FINANCE_STAFF', 'MANAGER']} />}>
+          {/* Finance / Admin — Finance module (backlog Items 15-19) is a finance-staff-only user story */}
+          <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'FINANCE_STAFF']} />}>
             <Route path="finance/reimbursements" element={<FinanceReimbursementPage />} />
           </Route>
 
