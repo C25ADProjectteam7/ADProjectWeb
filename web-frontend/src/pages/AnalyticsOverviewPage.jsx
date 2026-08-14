@@ -1,23 +1,93 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { analyticsApi } from '../api/analyticsApi.js';
+import DepartmentBudgetChart from '../charts/DepartmentBudgetChart.jsx';
+import TravelRankingChart from '../charts/TravelRankingChart.jsx';
+import CategoryBreakdownChart from '../charts/CategoryBreakdownChart.jsx';
+import MonthlyTrendChart from '../charts/MonthlyTrendChart.jsx';
+import ApprovalOutcomeChart from '../charts/ApprovalOutcomeChart.jsx';
 import '../styles/theme.css';
+
+function downloadChart(ref, filename) {
+  if (!ref.current) return;
+  const url = ref.current.toBase64Image();
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+}
+
+function ChartPanel({ title, chartRef, filename, height = 220, children }) {
+  return (
+    <div>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'baseline',
+          marginBottom: '8px',
+        }}
+      >
+        <span className="eh-section-title" style={{ margin: 0 }}>{title}</span>
+        <button
+          onClick={() => downloadChart(chartRef, filename)}
+          style={{
+            fontSize: '12px',
+            color: '#3A4767',
+            textDecoration: 'underline',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: 0,
+          }}
+        >
+          Download PNG
+        </button>
+      </div>
+      <div className="eh-card" style={{ height: `${height}px`, position: 'relative' }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+const chartRow = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+  gap: '20px',
+  marginBottom: '20px',
+};
 
 export default function AnalyticsOverviewPage() {
   const [deptExpenses, setDeptExpenses] = useState([]);
   const [travelFreq, setTravelFreq] = useState([]);
   const [alerts, setAlerts] = useState([]);
+  const [categoryBreakdown, setCategoryBreakdown] = useState([]);
+  const [monthlyTrend, setMonthlyTrend] = useState([]);
+  const [approvalOutcomes, setApprovalOutcomes] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const deptChartRef = useRef(null);
+  const travelChartRef = useRef(null);
+  const categoryChartRef = useRef(null);
+  const trendChartRef = useRef(null);
+  const approvalChartRef = useRef(null);
 
   useEffect(() => {
     async function loadData() {
-      const [deptRes, freqRes, alertRes] = await Promise.all([
+      const [deptRes, freqRes, alertRes, categoryRes, trendRes, approvalRes] = await Promise.all([
         analyticsApi.getDepartmentExpenseComparison(),
         analyticsApi.getEmployeeTravelFrequency(),
         analyticsApi.getBudgetOverrunAlerts(),
+        analyticsApi.getExpenseCategoryBreakdown(),
+        analyticsApi.getMonthlySpendTrend(),
+        analyticsApi.getApprovalOutcomes(),
       ]);
       setDeptExpenses(deptRes.data);
       setTravelFreq(freqRes.data);
       setAlerts(alertRes.data);
+      setCategoryBreakdown(categoryRes.data);
+      setMonthlyTrend(trendRes.data);
+      setApprovalOutcomes(approvalRes.data);
       setLoading(false);
     }
     loadData();
@@ -62,8 +132,10 @@ export default function AnalyticsOverviewPage() {
         </div>
       </div>
 
-      <div className="eh-section-title">Department Expense Comparison</div>
-      <div className="eh-card">
+      <ChartPanel title="Department Expense Comparison" chartRef={deptChartRef} filename="department-expense-comparison.png" height={240}>
+        {deptExpenses.length > 0 && <DepartmentBudgetChart data={deptExpenses} chartRef={deptChartRef} />}
+      </ChartPanel>
+      <div className="eh-card" style={{ marginBottom: '20px' }}>
         {deptExpenses.map((d) => {
           const over = d.totalExpense > d.budget;
           return (
@@ -86,8 +158,39 @@ export default function AnalyticsOverviewPage() {
         })}
       </div>
 
-      <div className="eh-section-title">Employee Travel Frequency</div>
-      <div className="eh-card">
+      <div style={chartRow}>
+        <ChartPanel title="Expense Category Breakdown" chartRef={categoryChartRef} filename="expense-category-breakdown.png">
+          {categoryBreakdown.length > 0 && <CategoryBreakdownChart data={categoryBreakdown} chartRef={categoryChartRef} />}
+        </ChartPanel>
+        {approvalOutcomes && (
+          <ChartPanel title="Approval Outcome Summary" chartRef={approvalChartRef} filename="approval-outcome-summary.png">
+            <ApprovalOutcomeChart
+              approved={approvalOutcomes.approved}
+              rejected={approvalOutcomes.rejected}
+              pending={approvalOutcomes.pending}
+              chartRef={approvalChartRef}
+            />
+          </ChartPanel>
+        )}
+      </div>
+
+      <div style={chartRow}>
+        <ChartPanel title="Monthly Spend Trend" chartRef={trendChartRef} filename="monthly-spend-trend.png">
+          {monthlyTrend.length > 0 && <MonthlyTrendChart data={monthlyTrend} chartRef={trendChartRef} />}
+        </ChartPanel>
+        <ChartPanel title="Employee Travel Frequency" chartRef={travelChartRef} filename="employee-travel-frequency.png">
+          {travelFreq.length > 0 && <TravelRankingChart data={travelFreq} chartRef={travelChartRef} />}
+        </ChartPanel>
+      </div>
+
+      {approvalOutcomes && (
+        <div className="eh-card" style={{ marginBottom: '20px' }}>
+          <p className="eh-empty">Average turnaround time: {approvalOutcomes.avgTurnaroundHours} hours</p>
+        </div>
+      )}
+
+      <div className="eh-section-title">Employee Travel Detail</div>
+      <div className="eh-card" style={{ marginBottom: '20px' }}>
         <table className="eh-table">
           <thead><tr><th>Employee</th><th>Department</th><th>Trips</th></tr></thead>
           <tbody>
