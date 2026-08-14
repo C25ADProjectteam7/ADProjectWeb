@@ -65,6 +65,7 @@ export default function AnalyticsOverviewPage() {
   const [monthlyTrend, setMonthlyTrend] = useState([]);
   const [approvalOutcomes, setApprovalOutcomes] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState('this_month');
   const [expandedDept, setExpandedDept] = useState(null);
   const [alertTransactions, setAlertTransactions] = useState({});
 
@@ -76,13 +77,15 @@ export default function AnalyticsOverviewPage() {
 
   useEffect(() => {
     async function loadData() {
+      setLoading(true);
+      const params = { period };
       const [deptRes, freqRes, alertRes, categoryRes, trendRes, approvalRes] = await Promise.all([
-        analyticsApi.getDepartmentExpenseComparison(),
-        analyticsApi.getEmployeeTravelFrequency(),
-        analyticsApi.getBudgetOverrunAlerts(),
-        analyticsApi.getExpenseCategoryBreakdown(),
-        analyticsApi.getMonthlySpendTrend(),
-        analyticsApi.getApprovalOutcomes(),
+        analyticsApi.getDepartmentExpenseComparison(params),
+        analyticsApi.getEmployeeTravelFrequency(params),
+        analyticsApi.getBudgetOverrunAlerts(params),
+        analyticsApi.getExpenseCategoryBreakdown(params),
+        analyticsApi.getMonthlySpendTrend(params),
+        analyticsApi.getApprovalOutcomes(params),
       ]);
       setDeptExpenses(deptRes.data);
       setTravelFreq(freqRes.data);
@@ -90,10 +93,12 @@ export default function AnalyticsOverviewPage() {
       setCategoryBreakdown(categoryRes.data);
       setMonthlyTrend(trendRes.data);
       setApprovalOutcomes(approvalRes.data);
+      setExpandedDept(null);
+      setAlertTransactions({});
       setLoading(false);
     }
     loadData();
-  }, []);
+  }, [period]);
 
   async function toggleAlertTransactions(department) {
     if (expandedDept === department) {
@@ -116,8 +121,22 @@ export default function AnalyticsOverviewPage() {
 
   return (
     <section className="eh-page">
-      <div className="eh-title">Analytics & Visualization</div>
-      <div className="eh-subtitle">Department expenses, travel frequency, and budget alerts based on Mobile app data</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <div className="eh-title">Analytics & Visualization</div>
+          <div className="eh-subtitle">Department expenses, travel frequency, and budget alerts based on Mobile app data</div>
+        </div>
+        <select
+          className="eh-input"
+          value={period}
+          onChange={(e) => setPeriod(e.target.value)}
+          style={{ minWidth: 160 }}
+        >
+          <option value="this_month">This Month</option>
+          <option value="last_month">Last Month</option>
+          <option value="this_quarter">This Quarter</option>
+        </select>
+      </div>
 
       <div className="eh-kpi-grid">
         <div className="eh-kpi-card">

@@ -47,16 +47,16 @@ export const analyticsApi = {
     if (USE_MOCK) return mockResolve(mockAlertTransactions[department] || []);
     return apiClient.get(`/analytics/budget-alerts/${department}/transactions`);
   },
-  getExpenseCategoryBreakdown() {
+  getExpenseCategoryBreakdown(params = { period: 'this_month' }) {
     if (USE_MOCK) return mockResolve(mockExpenseCategories);
-    return apiClient.get('/analytics/expense-categories');
+    return apiClient.get('/analytics/expense-categories', { params });
   },
-  getMonthlySpendTrend() {
+  getMonthlySpendTrend(params = { period: 'this_month' }) {
     if (USE_MOCK) return mockResolve(mockMonthlyTrend);
-    return apiClient.get('/analytics/monthly-trend');
+    return apiClient.get('/analytics/monthly-trend', { params });
   },
-  getApprovalOutcomes() {
+  getApprovalOutcomes(params = { period: 'this_month' }) {
     if (USE_MOCK) return mockResolve(mockApprovalOutcomes);
-    return apiClient.get('/analytics/approval-outcomes');
+    return apiClient.get('/analytics/approval-outcomes', { params });
   },
 };

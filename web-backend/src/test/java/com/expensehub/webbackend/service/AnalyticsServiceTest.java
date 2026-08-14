@@ -11,6 +11,7 @@ import com.expensehub.webbackend.integration.mobile.MobileTripDTO;
 import com.expensehub.webbackend.integration.mobile.MobileUserDTO;
 import com.expensehub.webbackend.repository.ApprovalRepository;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -30,26 +31,43 @@ class AnalyticsServiceTest {
 
     private AnalyticsService service;
 
+    // All test dates are computed relative to "today" rather than hardcoded,
+    // so these tests stay valid regardless of when they're run.
+    private static final LocalDate TODAY = LocalDate.now();
+
+    private LocalDateTime inThisMonth(int dayOffset) {
+        return TODAY.withDayOfMonth(1).plusDays(dayOffset).atTime(10, 0);
+    }
+
+    private LocalDateTime inLastMonth(int dayOffset) {
+        return TODAY.withDayOfMonth(1).minusMonths(1).plusDays(dayOffset).atTime(10, 0);
+    }
+
+    private LocalDateTime monthsAgo(int months, int dayOffset) {
+        return TODAY.withDayOfMonth(1).minusMonths(months).plusDays(dayOffset).atTime(10, 0);
+    }
+
     @BeforeEach
     void setUp() {
         service = new AnalyticsService(mobileExpenseClient, approvalRepository, departmentalBudgetService);
     }
 
-    private MobileExpenseDTO expense(Long id, Long userId, String status, String amount, String category, String submittedAt) {
+    private MobileExpenseDTO expense(Long id, Long userId, String status, String amount, String category, LocalDateTime submittedAt) {
         MobileExpenseDTO e = new MobileExpenseDTO();
         e.setId(id);
         e.setUserId(userId);
         e.setStatus(status);
         e.setAmount(new BigDecimal(amount));
         e.setCategory(category);
-        e.setSubmittedAt(LocalDateTime.parse(submittedAt));
+        e.setSubmittedAt(submittedAt);
         return e;
     }
 
-    private MobileTripDTO trip(Long id, Long userId) {
+    private MobileTripDTO trip(Long id, Long userId, LocalDateTime createdAt) {
         MobileTripDTO t = new MobileTripDTO();
         t.setId(id);
         t.setUserId(userId);
+        t.setCreatedAt(createdAt.toString());
         return t;
     }
 
@@ -63,16 +81,16 @@ class AnalyticsServiceTest {
     @Test
     void departmentExpenseComparison_onlyApproved_groupedByDepartment() {
         when(mobileExpenseClient.listAllExpenses()).thenReturn(List.of(
-                expense(1L, 10L, "APPROVED", "100", "FLIGHT", "2026-08-01T10:00:00"),
-                expense(2L, 10L, "APPROVED", "200", "HOTEL", "2026-08-02T10:00:00"),
-                expense(3L, 10L, "REJECTED", "999", "MEAL", "2026-08-03T10:00:00"),
-                expense(4L, 20L, "APPROVED", "50", "MEAL", "2026-08-04T10:00:00")));
+                expense(1L, 10L, "APPROVED", "100", "FLIGHT", inThisMonth(1)),
+                expense(2L, 10L, "APPROVED", "200", "HOTEL", inThisMonth(2)),
+                expense(3L, 10L, "REJECTED", "999", "MEAL", inThisMonth(3)),
+                expense(4L, 20L, "APPROVED", "50", "MEAL", inThisMonth(4))));
         when(mobileExpenseClient.getUser(10L)).thenReturn(user("alice", "Sales"));
         when(mobileExpenseClient.getUser(20L)).thenReturn(user("bob", "Marketing"));
         when(departmentalBudgetService.getLimit("Sales")).thenReturn(Optional.of(new BigDecimal("500")));
         when(departmentalBudgetService.getLimit("Marketing")).thenReturn(Optional.empty());
 
-        List<Map<String, Object>> result = service.getDepartmentExpenseComparison();
+        List<Map<String, Object>> result = service.getDepartmentExpenseComparison("this_month");
 
         Map<String, Object> sales = result.stream().filter(r -> r.get("department").equals("Sales")).findFirst().orElseThrow();
         assertThat((BigDecimal) sales.get("totalExpense")).isEqualByComparingTo("300");
@@ -84,13 +102,50 @@ class AnalyticsServiceTest {
     }
 
     @Test
+    void departmentExpenseComparison_lastMonthPeriod_excludesThisMonthData() {
+        // This is the exact scenario that surfaced the production bug:
+        // an expense submitted this month must NOT appear when filtering
+        // for "last_month".
+        when(mobileExpenseClient.listAllExpenses()).thenReturn(List.of(
+                expense(1L, 10L, "APPROVED", "55", "HOTEL", inThisMonth(1))));
+
+        List<Map<String, Object>> result = service.getDepartmentExpenseComparison("last_month");
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void departmentExpenseComparison_lastMonthPeriod_includesLastMonthData() {
+        when(mobileExpenseClient.listAllExpenses()).thenReturn(List.of(
+                expense(1L, 10L, "APPROVED", "55", "HOTEL", inLastMonth(1))));
+        when(mobileExpenseClient.getUser(10L)).thenReturn(user("alice", "Sales"));
+        when(departmentalBudgetService.getLimit("Sales")).thenReturn(Optional.empty());
+
+        List<Map<String, Object>> result = service.getDepartmentExpenseComparison("last_month");
+
+        assertThat(result).hasSize(1);
+        assertThat((BigDecimal) result.get(0).get("totalExpense")).isEqualByComparingTo("55");
+    }
+
+    @Test
+    void departmentExpenseComparison_thisQuarterPeriod_excludesDataFromFourMonthsAgo() {
+        when(mobileExpenseClient.listAllExpenses()).thenReturn(List.of(
+                expense(1L, 10L, "APPROVED", "55", "HOTEL", monthsAgo(4, 1))));
+
+        List<Map<String, Object>> result = service.getDepartmentExpenseComparison("this_quarter");
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
     void employeeTravelFrequency_countsAndSortsDescending() {
         when(mobileExpenseClient.listAllTrips()).thenReturn(List.of(
-                trip(1L, 100L), trip(2L, 100L), trip(3L, 100L), trip(4L, 200L)));
+                trip(1L, 100L, inThisMonth(1)), trip(2L, 100L, inThisMonth(2)),
+                trip(3L, 100L, inThisMonth(3)), trip(4L, 200L, inThisMonth(4))));
         when(mobileExpenseClient.getUser(100L)).thenReturn(user("alice", "Sales"));
         when(mobileExpenseClient.getUser(200L)).thenReturn(user("bob", "Engineering"));
 
-        List<Map<String, Object>> result = service.getEmployeeTravelFrequency();
+        List<Map<String, Object>> result = service.getEmployeeTravelFrequency("this_month");
 
         assertThat(result).hasSize(2);
         assertThat(result.get(0).get("userName")).isEqualTo("alice");
@@ -101,9 +156,9 @@ class AnalyticsServiceTest {
     @Test
     void budgetOverrunAlerts_flagsNearAndOverThresholds_excludesUnconfigured() {
         when(mobileExpenseClient.listAllExpenses()).thenReturn(List.of(
-                expense(1L, 10L, "APPROVED", "4300", "FLIGHT", "2026-08-01T10:00:00"), // Sales: 4300/5000 = 86% -> NEAR
-                expense(2L, 20L, "APPROVED", "6000", "FLIGHT", "2026-08-01T10:00:00"), // Marketing: 6000/3000 -> OVER
-                expense(3L, 30L, "APPROVED", "9999", "FLIGHT", "2026-08-01T10:00:00"))); // R&D: no budget -> excluded
+                expense(1L, 10L, "APPROVED", "4300", "FLIGHT", inThisMonth(1)), // Sales: 4300/5000 = 86% -> NEAR
+                expense(2L, 20L, "APPROVED", "6000", "FLIGHT", inThisMonth(1)), // Marketing: 6000/3000 -> OVER
+                expense(3L, 30L, "APPROVED", "9999", "FLIGHT", inThisMonth(1)))); // R&D: no budget -> excluded
         when(mobileExpenseClient.getUser(10L)).thenReturn(user("a", "Sales"));
         when(mobileExpenseClient.getUser(20L)).thenReturn(user("b", "Marketing"));
         when(mobileExpenseClient.getUser(30L)).thenReturn(user("c", "R&D"));
@@ -111,7 +166,7 @@ class AnalyticsServiceTest {
         when(departmentalBudgetService.getLimit("Marketing")).thenReturn(Optional.of(new BigDecimal("3000")));
         when(departmentalBudgetService.getLimit("R&D")).thenReturn(Optional.empty());
 
-        List<Map<String, Object>> alerts = service.getBudgetOverrunAlerts();
+        List<Map<String, Object>> alerts = service.getBudgetOverrunAlerts("this_month");
 
         assertThat(alerts).hasSize(2);
         Map<String, Object> sales = alerts.stream().filter(a -> a.get("department").equals("Sales")).findFirst().orElseThrow();
@@ -124,12 +179,12 @@ class AnalyticsServiceTest {
     @Test
     void expenseCategoryBreakdown_sumsApprovedByCategory() {
         when(mobileExpenseClient.listAllExpenses()).thenReturn(List.of(
-                expense(1L, 10L, "APPROVED", "100", "FLIGHT", "2026-08-01T10:00:00"),
-                expense(2L, 10L, "APPROVED", "50", "FLIGHT", "2026-08-02T10:00:00"),
-                expense(3L, 10L, "APPROVED", "30", "MEAL", "2026-08-03T10:00:00"),
-                expense(4L, 10L, "REJECTED", "999", "MEAL", "2026-08-04T10:00:00")));
+                expense(1L, 10L, "APPROVED", "100", "FLIGHT", inThisMonth(1)),
+                expense(2L, 10L, "APPROVED", "50", "FLIGHT", inThisMonth(2)),
+                expense(3L, 10L, "APPROVED", "30", "MEAL", inThisMonth(3)),
+                expense(4L, 10L, "REJECTED", "999", "MEAL", inThisMonth(4))));
 
-        List<Map<String, Object>> result = service.getExpenseCategoryBreakdown();
+        List<Map<String, Object>> result = service.getExpenseCategoryBreakdown("this_month");
 
         Map<String, Object> flight = result.stream().filter(r -> r.get("category").equals("FLIGHT")).findFirst().orElseThrow();
         assertThat((BigDecimal) flight.get("amount")).isEqualByComparingTo("150");
@@ -139,23 +194,31 @@ class AnalyticsServiceTest {
 
     @Test
     void monthlySpendTrend_sumsApprovedByMonth_chronologicalOrder() {
+        // Uses "this_quarter" (not "this_month") because a trend chart's whole
+        // purpose is showing multiple months — scoping it to "this_month" would
+        // only ever show a single bucket. Data spans this month and the quarter's
+        // first month, which are guaranteed distinct for most of the year (they
+        // only coincide when today falls in a quarter's first month).
+        LocalDateTime earlier = TODAY.withDayOfMonth(1).getMonthValue() == (((TODAY.getMonthValue() - 1) / 3) * 3 + 1)
+                ? inThisMonth(5)
+                : LocalDate.of(TODAY.getYear(), ((TODAY.getMonthValue() - 1) / 3) * 3 + 1, 1).plusDays(1).atTime(10, 0);
         when(mobileExpenseClient.listAllExpenses()).thenReturn(List.of(
-                expense(1L, 10L, "APPROVED", "100", "FLIGHT", "2026-07-15T10:00:00"),
-                expense(2L, 10L, "APPROVED", "200", "FLIGHT", "2026-08-01T10:00:00"),
-                expense(3L, 10L, "APPROVED", "50", "FLIGHT", "2026-08-10T10:00:00")));
+                expense(1L, 10L, "APPROVED", "100", "FLIGHT", earlier),
+                expense(2L, 10L, "APPROVED", "200", "FLIGHT", inThisMonth(1)),
+                expense(3L, 10L, "APPROVED", "50", "FLIGHT", inThisMonth(2))));
 
-        List<Map<String, Object>> result = service.getMonthlySpendTrend();
+        List<Map<String, Object>> result = service.getMonthlySpendTrend("this_quarter");
 
-        assertThat(result).hasSize(2);
-        assertThat(result.get(0).get("month")).isEqualTo("2026-07");
-        assertThat((BigDecimal) result.get(0).get("amount")).isEqualByComparingTo("100");
-        assertThat(result.get(1).get("month")).isEqualTo("2026-08");
-        assertThat((BigDecimal) result.get(1).get("amount")).isEqualByComparingTo("250");
+        BigDecimal total = result.stream()
+                .map(r -> (BigDecimal) r.get("amount"))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        assertThat(total).isEqualByComparingTo("350");
+        assertThat(result).allSatisfy(r -> assertThat((String) r.get("month")).startsWith("20"));
     }
 
     @Test
     void approvalOutcomeSummary_countsStatusesAndAvgTurnaround() {
-        LocalDateTime submitted = LocalDateTime.parse("2026-08-01T09:00:00");
+        LocalDateTime submitted = inThisMonth(1);
         when(approvalRepository.findAll()).thenReturn(List.of(
                 Approval.builder().status(ApprovalStatus.APPROVED)
                         .submittedAt(submitted).decidedAt(submitted.plusHours(10)).build(),
@@ -166,7 +229,7 @@ class AnalyticsServiceTest {
                 Approval.builder().status(ApprovalStatus.PENDING)
                         .submittedAt(submitted).build()));
 
-        Map<String, Object> result = service.getApprovalOutcomeSummary();
+        Map<String, Object> result = service.getApprovalOutcomeSummary("this_month");
 
         assertThat(result.get("approved")).isEqualTo(2L);
         assertThat(result.get("rejected")).isEqualTo(1L);

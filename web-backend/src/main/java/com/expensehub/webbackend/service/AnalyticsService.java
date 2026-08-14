@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -51,9 +53,42 @@ public class AnalyticsService {
         return (user != null && user.getDepartment() != null) ? user.getDepartment() : "Unknown";
     }
 
-    public List<Map<String, Object>> getDepartmentExpenseComparison() {
+    /**
+     * Supports "this_month", "last_month", "this_quarter" (matching the
+     * period keys the frontend already uses). Anything else — including
+     * null — falls back to "this_month", the same default the frontend
+     * API client uses.
+     */
+    private boolean withinPeriod(LocalDateTime dateTime, String period) {
+        if (dateTime == null) {
+            return false;
+        }
+        LocalDate date = dateTime.toLocalDate();
+        LocalDate today = LocalDate.now();
+        if ("last_month".equals(period)) {
+            LocalDate firstOfThisMonth = today.withDayOfMonth(1);
+            LocalDate firstOfLastMonth = firstOfThisMonth.minusMonths(1);
+            return !date.isBefore(firstOfLastMonth) && date.isBefore(firstOfThisMonth);
+        }
+        if ("this_quarter".equals(period)) {
+            int quarterStartMonth = ((today.getMonthValue() - 1) / 3) * 3 + 1;
+            LocalDate quarterStart = LocalDate.of(today.getYear(), quarterStartMonth, 1);
+            return !date.isBefore(quarterStart) && !date.isAfter(today);
+        }
+        // "this_month" and any unrecognized value
+        LocalDate firstOfThisMonth = today.withDayOfMonth(1);
+        return !date.isBefore(firstOfThisMonth) && !date.isAfter(today);
+    }
+
+    /** MobileTripDTO carries createdAt as a string; null means we can't place it in any period. */
+    private LocalDateTime parseTripCreatedAt(MobileTripDTO trip) {
+        return trip.getCreatedAt() != null ? LocalDateTime.parse(trip.getCreatedAt()) : null;
+    }
+
+    public List<Map<String, Object>> getDepartmentExpenseComparison(String period) {
         List<MobileExpenseDTO> approvedExpenses = mobileExpenseClient.listAllExpenses().stream()
                 .filter(e -> "APPROVED".equals(e.getStatus()))
+                .filter(e -> withinPeriod(e.getSubmittedAt(), period))
                 .toList();
 
         Map<Long, MobileUserDTO> userCache = buildUserCache(
@@ -74,8 +109,10 @@ public class AnalyticsService {
                 .collect(Collectors.toList());
     }
 
-    public List<Map<String, Object>> getEmployeeTravelFrequency() {
-        List<MobileTripDTO> trips = mobileExpenseClient.listAllTrips();
+    public List<Map<String, Object>> getEmployeeTravelFrequency(String period) {
+        List<MobileTripDTO> trips = mobileExpenseClient.listAllTrips().stream()
+                .filter(t -> withinPeriod(parseTripCreatedAt(t), period))
+                .toList();
 
         Map<Long, MobileUserDTO> userCache = buildUserCache(
                 trips.stream().map(MobileTripDTO::getUserId).toList());
@@ -97,10 +134,10 @@ public class AnalyticsService {
                 .collect(Collectors.toList());
     }
 
-    public List<Map<String, Object>> getBudgetOverrunAlerts() {
+    public List<Map<String, Object>> getBudgetOverrunAlerts(String period) {
         BigDecimal nearLimitRatio = BigDecimal.valueOf(0.85);
 
-        return getDepartmentExpenseComparison().stream()
+        return getDepartmentExpenseComparison(period).stream()
                 .filter(row -> {
                     BigDecimal actual = (BigDecimal) row.get("totalExpense");
                     BigDecimal budget = (BigDecimal) row.get("budget");
@@ -127,7 +164,11 @@ public class AnalyticsService {
                 .collect(Collectors.toList());
     }
 
-    /** Approved-expense line items for a department, for drilling down from a budget alert. */
+    /**
+     * Approved-expense line items for a department, for drilling down from a
+     * budget alert. Not period-scoped — this is a fixed drill-down list tied
+     * to a specific alert, shown separately from the period-filtered charts.
+     */
     public List<Map<String, Object>> getAlertTransactions(String department) {
         List<MobileExpenseDTO> approvedExpenses = mobileExpenseClient.listAllExpenses().stream()
                 .filter(e -> "APPROVED".equals(e.getStatus()))
@@ -151,9 +192,10 @@ public class AnalyticsService {
                 .collect(Collectors.toList());
     }
 
-    public List<Map<String, Object>> getExpenseCategoryBreakdown() {
+    public List<Map<String, Object>> getExpenseCategoryBreakdown(String period) {
         List<MobileExpenseDTO> approvedExpenses = mobileExpenseClient.listAllExpenses().stream()
                 .filter(e -> "APPROVED".equals(e.getStatus()))
+                .filter(e -> withinPeriod(e.getSubmittedAt(), period))
                 .toList();
 
         Map<String, BigDecimal> totalsByCategory = approvedExpenses.stream()
@@ -167,9 +209,10 @@ public class AnalyticsService {
                 .collect(Collectors.toList());
     }
 
-    public List<Map<String, Object>> getMonthlySpendTrend() {
+    public List<Map<String, Object>> getMonthlySpendTrend(String period) {
         List<MobileExpenseDTO> approvedExpenses = mobileExpenseClient.listAllExpenses().stream()
                 .filter(e -> "APPROVED".equals(e.getStatus()))
+                .filter(e -> withinPeriod(e.getSubmittedAt(), period))
                 .toList();
 
         Map<String, BigDecimal> totalsByMonth = approvedExpenses.stream()
@@ -184,8 +227,10 @@ public class AnalyticsService {
                 .collect(Collectors.toList());
     }
 
-    public Map<String, Object> getApprovalOutcomeSummary() {
-        List<Approval> all = approvalRepository.findAll();
+    public Map<String, Object> getApprovalOutcomeSummary(String period) {
+        List<Approval> all = approvalRepository.findAll().stream()
+                .filter(a -> withinPeriod(a.getSubmittedAt(), period))
+                .toList();
 
         long approved = all.stream().filter(a -> a.getStatus() == ApprovalStatus.APPROVED).count();
         long rejected = all.stream().filter(a -> a.getStatus() == ApprovalStatus.REJECTED).count();
