@@ -255,9 +255,15 @@ export default function ManagerApprovalsPage() {
                 <td>{item.destination}</td>
                 <td>
                   <span
-                    className={`eh-badge ${item.decision === 'APPROVED' ? 'eh-badge-sage' : 'eh-badge-coral'}`}
+                    className={`eh-badge ${
+                      item.decision === 'APPROVED' || item.status === 'APPROVED'
+                        ? 'eh-badge-sage'
+                        : 'eh-badge-coral'
+                    }`}
                   >
-                    {item.decision === 'APPROVED' ? 'Approved' : 'Rejected'}
+                    {item.decision === 'APPROVED' || item.status === 'APPROVED'
+                      ? 'Approved'
+                      : 'Rejected'}
                   </span>
                 </td>
                 <td className="eh-mono">{new Date(item.decidedAt).toLocaleString()}</td>
