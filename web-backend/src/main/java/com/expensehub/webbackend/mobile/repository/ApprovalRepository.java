@@ -10,6 +10,8 @@ public interface ApprovalRepository extends JpaRepository<Approval, Long> {
 
     boolean existsByMobileTripId(Long mobileTripId);
 
+    java.util.Optional<Approval> findByMobileTripId(Long mobileTripId);
+
     List<Approval> findByStatus(ApprovalStatus status);
 
     List<Approval> findByStatusInOrderByDecidedAtDesc(List<ApprovalStatus> statuses);

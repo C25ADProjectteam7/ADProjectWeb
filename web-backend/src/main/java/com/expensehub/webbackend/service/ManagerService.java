@@ -59,6 +59,11 @@ public class ManagerService {
 
             boolean alreadyTracked = approvalRepository.existsByMobileTripId(trip.getId());
             if (!alreadyTracked) {
+                // A trip the employee cancelled before it ever reached the
+                // approval queue needs no approval record at all.
+                if ("CANCELLED".equalsIgnoreCase(trip.getStatus())) {
+                    continue;
+                }
                 Optional<BigDecimal> limit = budgetLookupService.resolveBudgetLimit(department);
                 Approval approval =
                         Approval.builder()
@@ -78,6 +83,19 @@ public class ManagerService {
                                                 : LocalDateTime.now())
                                 .build();
                 approvalRepository.save(approval);
+            } else {
+                // Sync: the employee cancelled the trip after it became
+                // pending - mark the approval decided (REJECTED with an
+                // explanatory note) so it leaves the manager's pending list.
+                Optional<Approval> existing = approvalRepository.findByMobileTripId(trip.getId());
+                existing.filter(a -> a.getStatus() == ApprovalStatus.PENDING
+                        && "CANCELLED".equalsIgnoreCase(trip.getStatus()))
+                        .ifPresent(a -> {
+                            a.setStatus(ApprovalStatus.REJECTED);
+                            a.setNote("Trip was cancelled by the employee");
+                            a.setDecidedAt(LocalDateTime.now());
+                            approvalRepository.save(a);
+                        });
             }
         }
     }
