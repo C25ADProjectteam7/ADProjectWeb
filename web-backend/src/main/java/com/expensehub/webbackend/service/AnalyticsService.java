@@ -22,18 +22,18 @@ public class AnalyticsService {
 
     private final MobileExpenseClient mobileExpenseClient;
     private final ApprovalRepository approvalRepository;
-    private final DepartmentalBudgetService departmentalBudgetService;
+    private final BudgetLookupService budgetLookupService;
 
     public AnalyticsService(MobileExpenseClient mobileExpenseClient,
                              ApprovalRepository approvalRepository,
-                             DepartmentalBudgetService departmentalBudgetService) {
+                             BudgetLookupService budgetLookupService) {
         this.mobileExpenseClient = mobileExpenseClient;
         this.approvalRepository = approvalRepository;
-        this.departmentalBudgetService = departmentalBudgetService;
+        this.budgetLookupService = budgetLookupService;
     }
 
     private BigDecimal budgetOrZero(String department) {
-        return departmentalBudgetService.getLimit(department).orElse(BigDecimal.ZERO);
+        return budgetLookupService.resolveBudgetLimit(department).orElse(BigDecimal.ZERO);
     }
 
     private Map<Long, MobileUserDTO> buildUserCache(List<Long> userIds) {

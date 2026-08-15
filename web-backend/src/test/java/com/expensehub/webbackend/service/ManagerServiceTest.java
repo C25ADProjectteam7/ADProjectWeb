@@ -28,13 +28,13 @@ class ManagerServiceTest {
 
     @Mock private MobileExpenseClient mobileExpenseClient;
     @Mock private ApprovalRepository approvalRepository;
-    @Mock private DepartmentalBudgetService departmentalBudgetService;
+    @Mock private BudgetLookupService budgetLookupService;
 
     private ManagerService service;
 
     @BeforeEach
     void setUp() {
-        service = new ManagerService(mobileExpenseClient, approvalRepository, departmentalBudgetService);
+        service = new ManagerService(mobileExpenseClient, approvalRepository, budgetLookupService);
     }
 
     private MobileTripDTO trip(Long id, Long userId, String budget) {
@@ -59,10 +59,13 @@ class ManagerServiceTest {
     }
 
     @Test
-    void sync_overBudgetAndNotTracked_createsApproval() {
-        when(mobileExpenseClient.listAllTrips()).thenReturn(List.of(trip(1L, 10L, "5000")));
+    void sync_everyTripNotYetTracked_createsApproval_regardlessOfBudget() {
+        // Team decision: manager sees ALL trip requests, not just over-budget
+        // ones — this trip is well within its (generous) budget and must
+        // still show up.
+        when(mobileExpenseClient.listAllTrips()).thenReturn(List.of(trip(1L, 10L, "500")));
         when(mobileExpenseClient.getUser(10L)).thenReturn(user("Sales"));
-        when(departmentalBudgetService.getLimit("Sales")).thenReturn(Optional.of(new BigDecimal("3500")));
+        when(budgetLookupService.resolveBudgetLimit("Sales")).thenReturn(Optional.of(new BigDecimal("100000")));
         when(approvalRepository.existsByMobileTripId(1L)).thenReturn(false);
 
         service.syncPendingApprovalsFromMobile();
@@ -71,55 +74,48 @@ class ManagerServiceTest {
         verify(approvalRepository, times(1)).save(captor.capture());
         Approval saved = captor.getValue();
         assertThat(saved.getMobileTripId()).isEqualTo(1L);
-        assertThat(saved.getDepartment()).isEqualTo("Sales");
         assertThat(saved.getStatus()).isEqualTo(ApprovalStatus.PENDING);
-        assertThat(saved.getBudgetRequested()).isEqualByComparingTo("5000");
+        assertThat(saved.getDepartmentBudgetLimit()).isEqualByComparingTo("100000");
     }
 
     @Test
-    void sync_overBudgetButAlreadyTracked_doesNotCreateDuplicate() {
-        when(mobileExpenseClient.listAllTrips()).thenReturn(List.of(trip(1L, 10L, "5000")));
-        when(mobileExpenseClient.getUser(10L)).thenReturn(user("Sales"));
-        when(departmentalBudgetService.getLimit("Sales")).thenReturn(Optional.of(new BigDecimal("3500")));
+    void sync_noBudgetConfigured_stillCreatesApproval_withNullLimit() {
+        when(mobileExpenseClient.listAllTrips()).thenReturn(List.of(trip(1L, 10L, "500")));
+        when(mobileExpenseClient.getUser(10L)).thenReturn(user("R&D"));
+        when(budgetLookupService.resolveBudgetLimit("R&D")).thenReturn(Optional.empty());
+        when(approvalRepository.existsByMobileTripId(1L)).thenReturn(false);
+
+        service.syncPendingApprovalsFromMobile();
+
+        ArgumentCaptor<Approval> captor = ArgumentCaptor.forClass(Approval.class);
+        verify(approvalRepository, times(1)).save(captor.capture());
+        assertThat(captor.getValue().getDepartmentBudgetLimit()).isNull();
+    }
+
+    @Test
+    void sync_alreadyTracked_doesNotCreateDuplicate() {
+        when(mobileExpenseClient.listAllTrips()).thenReturn(List.of(trip(1L, 10L, "500")));
         when(approvalRepository.existsByMobileTripId(1L)).thenReturn(true);
 
         service.syncPendingApprovalsFromMobile();
 
         verify(approvalRepository, never()).save(any());
+        verify(budgetLookupService, never()).resolveBudgetLimit(any());
     }
 
     @Test
-    void sync_withinBudget_doesNotCreateApproval() {
-        when(mobileExpenseClient.listAllTrips()).thenReturn(List.of(trip(1L, 10L, "2000")));
-        when(mobileExpenseClient.getUser(10L)).thenReturn(user("Sales"));
-        when(departmentalBudgetService.getLimit("Sales")).thenReturn(Optional.of(new BigDecimal("3500")));
-
-        service.syncPendingApprovalsFromMobile();
-
-        verify(approvalRepository, never()).save(any());
-    }
-
-    @Test
-    void sync_noConfiguredLimit_treatedAsNoCap_doesNotCreateApproval() {
-        when(mobileExpenseClient.listAllTrips()).thenReturn(List.of(trip(1L, 10L, "999999")));
-        when(mobileExpenseClient.getUser(10L)).thenReturn(user("R&D"));
-        when(departmentalBudgetService.getLimit("R&D")).thenReturn(Optional.empty());
-
-        service.syncPendingApprovalsFromMobile();
-
-        verify(approvalRepository, never()).save(any());
-    }
-
-    @Test
-    void sync_mobileUserLookupFails_fallsBackToUnknownDepartment() {
-        when(mobileExpenseClient.listAllTrips()).thenReturn(List.of(trip(1L, 10L, "5000")));
+    void sync_mobileUserLookupFails_fallsBackToUnknownDepartment_stillCreatesApproval() {
+        when(mobileExpenseClient.listAllTrips()).thenReturn(List.of(trip(1L, 10L, "500")));
         when(mobileExpenseClient.getUser(10L)).thenThrow(new RuntimeException("Mobile API unreachable"));
-        when(departmentalBudgetService.getLimit("Unknown")).thenReturn(Optional.empty());
+        when(budgetLookupService.resolveBudgetLimit("Unknown")).thenReturn(Optional.empty());
         when(approvalRepository.existsByMobileTripId(1L)).thenReturn(false);
 
         service.syncPendingApprovalsFromMobile();
 
-        verify(approvalRepository, never()).save(any());
+        ArgumentCaptor<Approval> captor = ArgumentCaptor.forClass(Approval.class);
+        verify(approvalRepository, times(1)).save(captor.capture());
+        assertThat(captor.getValue().getDepartment()).isEqualTo("Unknown");
+        assertThat(captor.getValue().getEmployeeName()).isEqualTo("Unknown");
     }
 
     @Test
