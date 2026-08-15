@@ -115,14 +115,13 @@ public class ManagerService {
 
         // Keep the Mobile app in sync: the approvals table now lives in
         // Mobile's database, so flip the trip's status in the same database.
-        // Mobile's trips.status enum has no REJECTED value (observed live:
-        // writing it 500'd with a MySQL enum error) - a rejected approval maps
-        // to CANCELLED, which the Mobile app renders as the trip being
-        // disapproved/cancelled.
-        String mobileStatus = decision == ApprovalStatus.REJECTED ? "CANCELLED" : decision.name();
+        // Mobile's trips.status enum now includes REJECTED (it was added
+        // after the initial integration) - a rejected approval maps directly,
+        // and the Mobile app distinguishes it from the employee's own
+        // CANCELLED trips.
         mobileJdbcTemplate.update(
                 "UPDATE trips SET status = ? WHERE id = ?",
-                mobileStatus,
+                decision.name(),
                 approval.getMobileTripId());
         return approval;
     }
