@@ -85,6 +85,12 @@ export default function ManagerApprovalsPage() {
       </section>
     );
 
+  // A "REJECTED" approval whose note is the auto-sync cancellation marker
+  // (ManagerService) is an employee cancellation, not a manager rejection -
+  // render it distinctly.
+  const isCancelledByEmployee = (item) =>
+    (item.note || '').includes('cancelled by the employee');
+
   const overdueCount = pending.filter((item) => isOverdue(item.submittedAt)).length;
   const sortedPending = [...pending].sort((a, b) => {
     const aOverdue = isOverdue(a.submittedAt);
@@ -258,12 +264,16 @@ export default function ManagerApprovalsPage() {
                     className={`eh-badge ${
                       item.decision === 'APPROVED' || item.status === 'APPROVED'
                         ? 'eh-badge-sage'
-                        : 'eh-badge-coral'
+                        : isCancelledByEmployee(item)
+                          ? 'eh-badge-silver'
+                          : 'eh-badge-coral'
                     }`}
                   >
                     {item.decision === 'APPROVED' || item.status === 'APPROVED'
                       ? 'Approved'
-                      : 'Rejected'}
+                      : isCancelledByEmployee(item)
+                        ? 'Cancelled by employee'
+                        : 'Rejected'}
                   </span>
                 </td>
                 <td className="eh-mono">{new Date(item.decidedAt).toLocaleString()}</td>

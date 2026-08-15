@@ -113,6 +113,10 @@
   background: var(--sage-soft);
   color: var(--sage);
 }
+.eh-badge-silver {
+  background: #eceff3;
+  color: #5b6b7c;
+}
 
 .eh-btn {
   border: none;
