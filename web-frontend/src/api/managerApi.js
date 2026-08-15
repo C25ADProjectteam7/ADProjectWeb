@@ -8,13 +8,13 @@ function mockResolve(data) {
 }
 
 export const managerApi = {
-  listPendingApprovals() {
+  listPendingApprovals(page = 0, size = 10) {
     if (USE_MOCK) return mockResolve(mockPendingApprovals);
-    return apiClient.get('/manager/approvals/pending');
+    return apiClient.get('/manager/approvals/pending', { params: { page, size } });
   },
-  listApprovalHistory() {
+  listApprovalHistory(page = 0, size = 10) {
     if (USE_MOCK) return mockResolve(mockApprovalHistory);
-    return apiClient.get('/manager/approvals/history');
+    return apiClient.get('/manager/approvals/history', { params: { page, size } });
   },
   approveRequest(requestId, payload) {
     if (USE_MOCK) return mockResolve({ requestId, decision: 'APPROVED', ...payload });

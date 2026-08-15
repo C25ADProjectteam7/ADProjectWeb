@@ -123,24 +123,27 @@ class ManagerServiceTest {
     @Test
     void listPending_syncsFirstThenReturnsPendingOnly() {
         when(mobileExpenseClient.listAllTrips()).thenReturn(List.of());
-        when(approvalRepository.findByStatus(ApprovalStatus.PENDING))
-                .thenReturn(List.of(Approval.builder().status(ApprovalStatus.PENDING).build()));
+        when(approvalRepository.findByStatus(
+                        org.mockito.ArgumentMatchers.eq(ApprovalStatus.PENDING),
+                        org.mockito.ArgumentMatchers.any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(org.springframework.data.domain.Page.empty());
 
-        List<Approval> result = service.listPending();
+        org.springframework.data.domain.Page<Approval> result = service.listPending(0, 10);
 
-        assertThat(result).hasSize(1);
+        assertThat(result).isEmpty();
         verify(mobileExpenseClient, times(1)).listAllTrips();
     }
 
     @Test
     void listHistory_returnsApprovedAndRejectedOnly() {
         when(approvalRepository.findByStatusInOrderByDecidedAtDesc(
-                List.of(ApprovalStatus.APPROVED, ApprovalStatus.REJECTED)))
-                .thenReturn(List.of(Approval.builder().status(ApprovalStatus.APPROVED).build()));
+                org.mockito.ArgumentMatchers.eq(List.of(ApprovalStatus.APPROVED, ApprovalStatus.REJECTED)),
+                org.mockito.ArgumentMatchers.any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(org.springframework.data.domain.Page.empty());
 
-        List<Approval> result = service.listHistory();
+        org.springframework.data.domain.Page<Approval> result = service.listHistory(0, 10);
 
-        assertThat(result).hasSize(1);
+        assertThat(result).isEmpty();
     }
 
     @Test

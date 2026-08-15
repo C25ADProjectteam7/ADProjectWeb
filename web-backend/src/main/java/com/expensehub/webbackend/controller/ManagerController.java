@@ -24,13 +24,17 @@ public class ManagerController {
     }
 
     @GetMapping("/pending")
-    public List<Approval> listPending() {
-        return managerService.listPending();
+    public org.springframework.data.domain.Page<Approval> listPending(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return managerService.listPending(page, Math.min(size, 50));
     }
 
     @GetMapping("/history")
-    public List<Approval> listHistory() {
-        return managerService.listHistory();
+    public org.springframework.data.domain.Page<Approval> listHistory(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return managerService.listHistory(page, Math.min(size, 50));
     }
 
     @PostMapping("/{id}/approve")

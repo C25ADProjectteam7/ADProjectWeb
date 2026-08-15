@@ -113,14 +113,20 @@ public class ManagerService {
         syncPendingApprovalsFromMobile();
     }
 
-    public List<Approval> listPending() {
+    public org.springframework.data.domain.Page<Approval> listPending(int page, int size) {
         syncPendingApprovalsFromMobile();
-        return approvalRepository.findByStatus(ApprovalStatus.PENDING);
+        return approvalRepository.findByStatus(
+                ApprovalStatus.PENDING,
+                org.springframework.data.domain.PageRequest.of(
+                        page, size,
+                        org.springframework.data.domain.Sort.by(
+                                org.springframework.data.domain.Sort.Direction.DESC, "submittedAt")));
     }
 
-    public List<Approval> listHistory() {
+    public org.springframework.data.domain.Page<Approval> listHistory(int page, int size) {
         return approvalRepository.findByStatusInOrderByDecidedAtDesc(
-                List.of(ApprovalStatus.APPROVED, ApprovalStatus.REJECTED));
+                List.of(ApprovalStatus.APPROVED, ApprovalStatus.REJECTED),
+                org.springframework.data.domain.PageRequest.of(page, size));
     }
 
     public Approval decide(Long approvalId, ApprovalStatus decision, String note, Long managerId) {

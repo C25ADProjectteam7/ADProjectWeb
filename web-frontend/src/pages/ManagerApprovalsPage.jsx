@@ -23,16 +23,23 @@ export default function ManagerApprovalsPage() {
   const [actionError, setActionError] = useState(null);
   const [noteDrafts, setNoteDrafts] = useState({});
   const [expandedId, setExpandedId] = useState(null);
+  const [pendingPage, setPendingPage] = useState(0);
+  const [pendingTotalPages, setPendingTotalPages] = useState(0);
+  const [historyPage, setHistoryPage] = useState(0);
+  const [historyTotalPages, setHistoryTotalPages] = useState(0);
+  const PAGE_SIZE = 10;
 
   useEffect(() => {
     async function loadData() {
       try {
         const [pendingRes, historyRes] = await Promise.all([
-          managerApi.listPendingApprovals(),
-          managerApi.listApprovalHistory(),
+          managerApi.listPendingApprovals(pendingPage, PAGE_SIZE),
+          managerApi.listApprovalHistory(historyPage, PAGE_SIZE),
         ]);
-        setPending(pendingRes.data);
-        setHistory(historyRes.data);
+        setPending(pendingRes.data.content || []);
+        setPendingTotalPages(pendingRes.data.totalPages || 0);
+        setHistory(historyRes.data.content || []);
+        setHistoryTotalPages(historyRes.data.totalPages || 0);
       } catch (err) {
         setError('Failed to load approval data. Please try again.');
       } finally {
@@ -40,7 +47,8 @@ export default function ManagerApprovalsPage() {
       }
     }
     loadData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingPage, historyPage]);
 
   async function handleDecision(id, decision) {
     setActionError(null);
@@ -92,12 +100,11 @@ export default function ManagerApprovalsPage() {
     (item.note || '').includes('cancelled by the employee');
 
   const overdueCount = pending.filter((item) => isOverdue(item.submittedAt)).length;
-  const sortedPending = [...pending].sort((a, b) => {
-    const aOverdue = isOverdue(a.submittedAt);
-    const bOverdue = isOverdue(b.submittedAt);
-    if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
-    return new Date(a.submittedAt) - new Date(b.submittedAt);
-  });
+  // Newest submissions first (the backend already sorts by submittedAt desc,
+  // this is a safety net for any client-side reordering).
+  const sortedPending = [...pending].sort(
+    (a, b) => new Date(b.submittedAt) - new Date(a.submittedAt),
+  );
 
   return (
     <section className="eh-page">
@@ -127,6 +134,7 @@ export default function ManagerApprovalsPage() {
         </div>
       )}
       <div className="eh-card">
+        <div className="eh-table-scroll">
         {sortedPending.length === 0 ? (
           <p className="eh-empty">No pending approvals right now.</p>
         ) : (
@@ -240,10 +248,33 @@ export default function ManagerApprovalsPage() {
             </tbody>
           </table>
         )}
+        </div>
+        {pendingTotalPages > 1 && (
+          <div className="eh-pagination">
+            <button
+              className="eh-btn"
+              disabled={pendingPage === 0}
+              onClick={() => setPendingPage((p) => Math.max(0, p - 1))}
+            >
+              ‹ Prev
+            </button>
+            <span className="eh-pagination-info">
+              Page {pendingPage + 1} / {pendingTotalPages}
+            </span>
+            <button
+              className="eh-btn"
+              disabled={pendingPage >= pendingTotalPages - 1}
+              onClick={() => setPendingPage((p) => p + 1)}
+            >
+              Next ›
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="eh-section-title">Approval History</div>
       <div className="eh-card">
+        <div className="eh-table-scroll">
         <table className="eh-table">
           <thead>
             <tr>
@@ -282,6 +313,28 @@ export default function ManagerApprovalsPage() {
             ))}
           </tbody>
         </table>
+        </div>
+        {historyTotalPages > 1 && (
+          <div className="eh-pagination">
+            <button
+              className="eh-btn"
+              disabled={historyPage === 0}
+              onClick={() => setHistoryPage((p) => Math.max(0, p - 1))}
+            >
+              ‹ Prev
+            </button>
+            <span className="eh-pagination-info">
+              Page {historyPage + 1} / {historyTotalPages}
+            </span>
+            <button
+              className="eh-btn"
+              disabled={historyPage >= historyTotalPages - 1}
+              onClick={() => setHistoryPage((p) => p + 1)}
+            >
+              Next ›
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );
