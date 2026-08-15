@@ -16,25 +16,31 @@ import org.springframework.stereotype.Service;
 
 /**
  * Business logic for backlog Item 20: Manager Approval Notifications.
- * A trip becomes a pending approval when its requested budget exceeds its
- * department's yearly limit (see DepartmentalBudgetService). Departments with
- * no configured limit are never flagged — "not configured" is treated as
- * "no cap", not as a cap of zero.
+ * Every trip submitted via Mobile becomes a pending approval — managers
+ * review all of them, not just ones over budget (per team decision:
+ * "manager must see all trip requests, normal ones need approval too").
+ * departmentBudgetLimit is carried along as reference information only,
+ * not as a filter for whether a trip appears here.
+ * <p>
+ * The budget figure itself is read from Finance's BudgetConfig (Item 16 —
+ * the same quarterly/annual department budgets finance staff configure),
+ * not a separate manager-only budget table: quarter takes priority over
+ * annual when both are configured for the same department.
  */
 @Service
 public class ManagerService {
 
     private final MobileExpenseClient mobileExpenseClient;
     private final ApprovalRepository approvalRepository;
-    private final DepartmentalBudgetService departmentalBudgetService;
+    private final BudgetLookupService budgetLookupService;
 
     public ManagerService(
             MobileExpenseClient mobileExpenseClient,
             ApprovalRepository approvalRepository,
-            DepartmentalBudgetService departmentalBudgetService) {
+            BudgetLookupService budgetLookupService) {
         this.mobileExpenseClient = mobileExpenseClient;
         this.approvalRepository = approvalRepository;
-        this.departmentalBudgetService = departmentalBudgetService;
+        this.budgetLookupService = budgetLookupService;
     }
 
     public void syncPendingApprovalsFromMobile() {
@@ -44,13 +50,9 @@ public class ManagerService {
             String department = (owner != null && owner.getDepartment() != null) ? owner.getDepartment() : "Unknown";
             String employeeName = owner != null ? owner.getUsername() : "Unknown";
 
-            Optional<BigDecimal> limit = departmentalBudgetService.getLimit(department);
-            boolean overBudget =
-                    limit.isPresent()
-                            && trip.getBudgetTotal() != null
-                            && trip.getBudgetTotal().compareTo(limit.get()) > 0;
             boolean alreadyTracked = approvalRepository.existsByMobileTripId(trip.getId());
-            if (overBudget && !alreadyTracked) {
+            if (!alreadyTracked) {
+                Optional<BigDecimal> limit = budgetLookupService.resolveBudgetLimit(department);
                 Approval approval =
                         Approval.builder()
                                 .mobileTripId(trip.getId())
@@ -61,7 +63,7 @@ public class ManagerService {
                                 .startDate(LocalDate.parse(trip.getStartDate()))
                                 .endDate(LocalDate.parse(trip.getEndDate()))
                                 .budgetRequested(trip.getBudgetTotal())
-                                .departmentBudgetLimit(limit.get())
+                                .departmentBudgetLimit(limit.orElse(null))
                                 .status(ApprovalStatus.PENDING)
                                 .submittedAt(
                                         trip.getCreatedAt() != null

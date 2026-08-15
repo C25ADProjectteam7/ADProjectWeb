@@ -27,7 +27,7 @@ class AnalyticsServiceTest {
 
     @Mock private MobileExpenseClient mobileExpenseClient;
     @Mock private ApprovalRepository approvalRepository;
-    @Mock private DepartmentalBudgetService departmentalBudgetService;
+    @Mock private BudgetLookupService budgetLookupService;
 
     private AnalyticsService service;
 
@@ -49,7 +49,7 @@ class AnalyticsServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AnalyticsService(mobileExpenseClient, approvalRepository, departmentalBudgetService);
+        service = new AnalyticsService(mobileExpenseClient, approvalRepository, budgetLookupService);
     }
 
     private MobileExpenseDTO expense(Long id, Long userId, String status, String amount, String category, LocalDateTime submittedAt) {
@@ -87,8 +87,8 @@ class AnalyticsServiceTest {
                 expense(4L, 20L, "APPROVED", "50", "MEAL", inThisMonth(4))));
         when(mobileExpenseClient.getUser(10L)).thenReturn(user("alice", "Sales"));
         when(mobileExpenseClient.getUser(20L)).thenReturn(user("bob", "Marketing"));
-        when(departmentalBudgetService.getLimit("Sales")).thenReturn(Optional.of(new BigDecimal("500")));
-        when(departmentalBudgetService.getLimit("Marketing")).thenReturn(Optional.empty());
+        when(budgetLookupService.resolveBudgetLimit("Sales")).thenReturn(Optional.of(new BigDecimal("500")));
+        when(budgetLookupService.resolveBudgetLimit("Marketing")).thenReturn(Optional.empty());
 
         List<Map<String, Object>> result = service.getDepartmentExpenseComparison("this_month");
 
@@ -119,7 +119,7 @@ class AnalyticsServiceTest {
         when(mobileExpenseClient.listAllExpenses()).thenReturn(List.of(
                 expense(1L, 10L, "APPROVED", "55", "HOTEL", inLastMonth(1))));
         when(mobileExpenseClient.getUser(10L)).thenReturn(user("alice", "Sales"));
-        when(departmentalBudgetService.getLimit("Sales")).thenReturn(Optional.empty());
+        when(budgetLookupService.resolveBudgetLimit("Sales")).thenReturn(Optional.empty());
 
         List<Map<String, Object>> result = service.getDepartmentExpenseComparison("last_month");
 
@@ -162,9 +162,9 @@ class AnalyticsServiceTest {
         when(mobileExpenseClient.getUser(10L)).thenReturn(user("a", "Sales"));
         when(mobileExpenseClient.getUser(20L)).thenReturn(user("b", "Marketing"));
         when(mobileExpenseClient.getUser(30L)).thenReturn(user("c", "R&D"));
-        when(departmentalBudgetService.getLimit("Sales")).thenReturn(Optional.of(new BigDecimal("5000")));
-        when(departmentalBudgetService.getLimit("Marketing")).thenReturn(Optional.of(new BigDecimal("3000")));
-        when(departmentalBudgetService.getLimit("R&D")).thenReturn(Optional.empty());
+        when(budgetLookupService.resolveBudgetLimit("Sales")).thenReturn(Optional.of(new BigDecimal("5000")));
+        when(budgetLookupService.resolveBudgetLimit("Marketing")).thenReturn(Optional.of(new BigDecimal("3000")));
+        when(budgetLookupService.resolveBudgetLimit("R&D")).thenReturn(Optional.empty());
 
         List<Map<String, Object>> alerts = service.getBudgetOverrunAlerts("this_month");
 
