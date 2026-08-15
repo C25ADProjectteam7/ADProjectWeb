@@ -47,7 +47,6 @@ export default function ManagerApprovalsPage() {
       }
     }
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingPage, historyPage]);
 
   async function handleDecision(id, decision) {

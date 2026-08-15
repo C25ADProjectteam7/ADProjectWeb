@@ -205,7 +205,7 @@ export default function FinanceReimbursementPage() {
   async function submitReview(requestId) {
     if (reviewForm.decision === 'REQUEST_INFO' && !reviewForm.comment.trim()) {
       setRowActionError(
-        'When requesting additional information, please fill in the specific content that needs to be补充/modified, and employees will see this comment.',
+        'When requesting additional information, please fill in the specific content that needs to be supplied/modified, and employees will see this comment.',
       );
       return;
     }
@@ -225,24 +225,43 @@ export default function FinanceReimbursementPage() {
     }
   }
 
+  // 获取状态对应的 badge 颜色类
+  function getStatusBadgeClass(status) {
+    switch (status) {
+      case 'APPROVED':
+        return 'eh-badge-sage';
+      case 'REJECTED':
+        return 'eh-badge-coral';
+      case 'SUBMITTED':
+      case 'NEEDS_INFO':
+      default:
+        return 'eh-badge-silver';
+    }
+  }
+
   return (
-    <section className="finance-page">
-      <h2>Financial Reimbursement Process</h2>
-      <p className="finance-subtitle">
+    <section className="eh-page">
+      <h2 className="eh-title">Financial Reimbursement Process</h2>
+      <p className="eh-subtitle">
         Budget configuration, automatic compliance marking, reimbursement request review, data
         export to Excel.
       </p>
 
       {/* Budget allocation*/}
-      <div className="finance-card">
+      <div className="eh-card">
         <h3>Department Budget Configuration</h3>
-        {budgetError && <p className="finance-error">{budgetError}</p>}
+        {budgetError && (
+          <div className="eh-alert-card">
+            <span className="eh-alert-title">{budgetError}</span>
+          </div>
+        )}
 
         <form className="finance-inline-form" onSubmit={handleBudgetSubmit}>
           <label>
             Department
             <input
               type="text"
+              className="eh-input"
               value={budgetForm.department}
               onChange={(e) => setBudgetForm((f) => ({ ...f, department: e.target.value }))}
               placeholder="Engineering"
@@ -251,6 +270,7 @@ export default function FinanceReimbursementPage() {
           <label>
             Period Type
             <select
+              className="eh-input"
               value={budgetForm.periodType}
               onChange={(e) => setBudgetForm((f) => ({ ...f, periodType: e.target.value }))}
             >
@@ -262,6 +282,7 @@ export default function FinanceReimbursementPage() {
             Period Label
             <input
               type="text"
+              className="eh-input"
               value={budgetForm.periodLabel}
               onChange={(e) => setBudgetForm((f) => ({ ...f, periodLabel: e.target.value }))}
               placeholder={budgetForm.periodType === 'ANNUAL' ? '2026' : '2026-Q1'}
@@ -273,83 +294,86 @@ export default function FinanceReimbursementPage() {
               type="number"
               min="0"
               step="0.01"
+              className="eh-input"
               value={budgetForm.amount}
               onChange={(e) => setBudgetForm((f) => ({ ...f, amount: e.target.value }))}
               placeholder="5000.00"
             />
           </label>
-          <button type="submit" disabled={budgetSaving}>
+          <button type="submit" className="eh-btn eh-btn-approve" disabled={budgetSaving}>
             {budgetSaving ? 'Saving…' : 'Save Budget'}
           </button>
         </form>
 
-        <table className="finance-table">
-          <thead>
-            <tr>
-              <th>Department</th>
-              <th>Period</th>
-              <th>Budget</th>
-              <th>Spent</th>
-              <th>Remaining</th>
-              <th>Status</th>
-              <th>Last Updated</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {budgets.length === 0 && (
+        <div className="eh-table-scroll">
+          <table className="eh-table">
+            <thead>
               <tr>
-                <td colSpan={8} className="finance-empty">
-                  No budget configuration available
-                </td>
+                <th>Department</th>
+                <th>Period</th>
+                <th>Budget</th>
+                <th>Spent</th>
+                <th>Remaining</th>
+                <th>Status</th>
+                <th>Last Updated</th>
+                <th></th>
               </tr>
-            )}
-            {budgets.map((b) => (
-              <Fragment key={b.id}>
+            </thead>
+            <tbody>
+              {budgets.length === 0 && (
                 <tr>
-                  <td>{b.department}</td>
-                  <td>{b.periodLabel}</td>
-                  <td>{formatMoney(b.amount, '')}</td>
-                  <td>{formatMoney(b.spent, '')}</td>
-                  <td>{formatMoney(b.remaining, '')}</td>
-                  <td>
-                    {b.overBudget ? (
-                      <span className="finance-badge finance-badge-danger">Over Budget</span>
-                    ) : (
-                      <span className="finance-badge finance-badge-ok">Normal</span>
-                    )}
-                  </td>
-                  <td>{b.updatedBy ? `${b.updatedBy} · ${formatDateTime(b.updatedAt)}` : '-'}</td>
-                  <td>
-                    <button type="button" onClick={() => toggleBudgetAudit(b.id)}>
-                      {openBudgetAuditId === b.id ? 'Collapse Records' : 'View Changes'}
-                    </button>
+                  <td colSpan={8} className="eh-empty">
+                    No budget configuration available
                   </td>
                 </tr>
-                {openBudgetAuditId === b.id && (
+              )}
+              {budgets.map((b) => (
+                <Fragment key={b.id}>
                   <tr>
-                    <td colSpan={8}>
-                      <ul className="finance-audit-list">
-                        {budgetAuditEntries.length === 0 && <li>No change records available</li>}
-                        {budgetAuditEntries.map((entry) => (
-                          <li key={entry.id}>
-                            {formatDateTime(entry.changedAt)} · {entry.changedBy} · {entry.detail}
-                          </li>
-                        ))}
-                      </ul>
+                    <td>{b.department}</td>
+                    <td>{b.periodLabel}</td>
+                    <td>{formatMoney(b.amount, '')}</td>
+                    <td>{formatMoney(b.spent, '')}</td>
+                    <td>{formatMoney(b.remaining, '')}</td>
+                    <td>
+                      {b.overBudget ? (
+                        <span className="eh-badge eh-badge-coral">Over Budget</span>
+                      ) : (
+                        <span className="eh-badge eh-badge-sage">Normal</span>
+                      )}
+                    </td>
+                    <td>{b.updatedBy ? `${b.updatedBy} · ${formatDateTime(b.updatedAt)}` : '-'}</td>
+                    <td>
+                      <button type="button" className="eh-btn" onClick={() => toggleBudgetAudit(b.id)}>
+                        {openBudgetAuditId === b.id ? 'Collapse Records' : 'View Changes'}
+                      </button>
                     </td>
                   </tr>
-                )}
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
+                  {openBudgetAuditId === b.id && (
+                    <tr>
+                      <td colSpan={8}>
+                        <ul className="finance-audit-list">
+                          {budgetAuditEntries.length === 0 && <li>No change records available</li>}
+                          {budgetAuditEntries.map((entry) => (
+                            <li key={entry.id}>
+                              {formatDateTime(entry.changedAt)} · {entry.changedBy} · {entry.detail}
+                            </li>
+                          ))}
+                        </ul>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* ---------------- Reimbursement Requests / Review (Item 17) ---------------- */}
-      <div className="finance-card">
+      <div className="eh-card">
         <h3>Reimbursement Requests</h3>
-        <p className="finance-subtitle">
+        <p className="eh-subtitle">
           Data comes from the Mobile app submitted by employees. When errors are found in
           amount/category information, use the &quot;Request Additional Information&quot; button
           below to reject the request, and employees will be able to modify it in the App and it
@@ -360,6 +384,7 @@ export default function FinanceReimbursementPage() {
           <label>
             Status
             <select
+              className="eh-input"
               value={filters.status}
               onChange={(e) => handleFilterChange('status', e.target.value)}
             >
@@ -375,6 +400,7 @@ export default function FinanceReimbursementPage() {
             Department
             <input
               type="text"
+              className="eh-input"
               value={filters.department}
               onChange={(e) => handleFilterChange('department', e.target.value)}
               placeholder="All Departments"
@@ -383,6 +409,7 @@ export default function FinanceReimbursementPage() {
           <label>
             Category
             <select
+              className="eh-input"
               value={filters.category}
               onChange={(e) => handleFilterChange('category', e.target.value)}
             >
@@ -398,6 +425,7 @@ export default function FinanceReimbursementPage() {
             Start Date
             <input
               type="date"
+              className="eh-input"
               value={filters.from}
               onChange={(e) => handleFilterChange('from', e.target.value)}
             />
@@ -406,183 +434,194 @@ export default function FinanceReimbursementPage() {
             End Date
             <input
               type="date"
+              className="eh-input"
               value={filters.to}
               onChange={(e) => handleFilterChange('to', e.target.value)}
             />
           </label>
-          <button type="button" onClick={() => loadReimbursements()} disabled={listLoading}>
+          <button type="button" className="eh-btn" onClick={() => loadReimbursements()} disabled={listLoading}>
             {listLoading ? 'Loading…' : 'Refresh'}
           </button>
-          <button type="button" onClick={handleExport} disabled={exporting}>
+          <button type="button" className="eh-btn" onClick={handleExport} disabled={exporting}>
             {exporting ? 'Exporting…' : 'Export to Excel'}
           </button>
         </div>
 
-        {listError && <p className="finance-error">{listError}</p>}
+        {listError && (
+          <div className="eh-alert-card">
+            <span className="eh-alert-title">{listError}</span>
+          </div>
+        )}
 
-        <table className="finance-table">
-          <thead>
-            <tr>
-              <th>Employee</th>
-              <th>Department</th>
-              <th>Category</th>
-              <th>Amount</th>
-              <th>Submitted At</th>
-              <th>Receipt</th>
-              <th>Status</th>
-              <th>Compliance Flags</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {reimbursements.content.length === 0 && !listLoading && (
+        <div className="eh-table-scroll">
+          <table className="eh-table">
+            <thead>
               <tr>
-                <td colSpan={9} className="finance-empty">
-                  No qualifying reimbursement requests
-                </td>
+                <th>Employee</th>
+                <th>Department</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Submitted At</th>
+                <th>Receipt</th>
+                <th>Status</th>
+                <th>Compliance Flags</th>
+                <th></th>
               </tr>
-            )}
-            {reimbursements.content.map((row) => (
-              <Fragment key={row.id}>
+            </thead>
+            <tbody>
+              {reimbursements.content.length === 0 && !listLoading && (
                 <tr>
-                  <td>{row.employeeName}</td>
-                  <td>{row.department || 'Unknown Department'}</td>
-                  <td>{row.category}</td>
-                  <td>{formatMoney(row.amount, row.currency)}</td>
-                  <td>{formatDateTime(row.submittedAt)}</td>
-                  <td>
-                    {row.receiptAttached ? (
-                      <a href={row.receiptUrl} target="_blank" rel="noreferrer">
-                        View Receipt
-                      </a>
-                    ) : (
-                      'No Receipt'
-                    )}
-                  </td>
-                  <td>
-                    <span
-                      className={`finance-badge ${
-                        row.status === 'APPROVED'
-                          ? 'finance-badge-ok'
-                          : row.status === 'REJECTED'
-                            ? 'finance-badge-danger'
-                            : 'finance-badge-pending'
-                      }`}
-                    >
-                      {STATUS_LABELS[row.status]}
-                    </span>
-                  </td>
-                  <td>
-                    {row.policyFlags.length === 0
-                      ? '-'
-                      : row.policyFlags.map((flag) => (
-                          <span key={flag} className="finance-badge finance-badge-flag">
-                            {FLAG_LABELS[flag] || flag}
-                          </span>
-                        ))}
-                  </td>
-                  <td className="finance-row-actions">
-                    <button type="button" onClick={() => openReview(row)}>
-                      Review
-                    </button>
-                    <button type="button" onClick={() => openAudit(row)}>
-                      Audit Trail
-                    </button>
+                  <td colSpan={9} className="eh-empty">
+                    No qualifying reimbursement requests
                   </td>
                 </tr>
-
-                {expandedRowId === row.id && expandedMode === 'review' && (
+              )}
+              {reimbursements.content.map((row) => (
+                <Fragment key={row.id}>
                   <tr>
-                    <td colSpan={9}>
-                      <div className="finance-expanded-panel">
-                        {rowActionError && <p className="finance-error">{rowActionError}</p>}
-                        <label>
-                          Review Conclusion
-                          <select
-                            value={reviewForm.decision}
-                            onChange={(e) =>
-                              setReviewForm((f) => ({ ...f, decision: e.target.value }))
-                            }
-                          >
-                            <option value="APPROVE">Approve</option>
-                            <option value="REJECT">Reject</option>
-                            <option value="REQUEST_INFO">
-                              Request Additional Information / Modification
-                            </option>
-                          </select>
-                        </label>
-                        <label>
-                          Comment
-                          {reviewForm.decision === 'REQUEST_INFO'
-                            ? ' (Required, Employee Will See)'
-                            : ' (Optional)'}
-                          <textarea
-                            value={reviewForm.comment}
-                            onChange={(e) =>
-                              setReviewForm((f) => ({ ...f, comment: e.target.value }))
-                            }
-                            placeholder={
-                              reviewForm.decision === 'REQUEST_INFO'
-                                ? 'For example: Amount and receipt do not match, please verify and resubmit'
-                                : 'Review comments (optional)'
-                            }
-                          />
-                        </label>
-                        <div className="finance-panel-actions">
-                          <button
-                            type="button"
-                            onClick={() => submitReview(row.id)}
-                            disabled={rowActionBusy}
-                          >
-                            Submit Review Result
-                          </button>
-                          <button type="button" onClick={closeExpandedRow}>
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
+                    <td>{row.employeeName}</td>
+                    <td>{row.department || 'Unknown Department'}</td>
+                    <td>{row.category}</td>
+                    <td>{formatMoney(row.amount, row.currency)}</td>
+                    <td>{formatDateTime(row.submittedAt)}</td>
+                    <td>
+                      {row.receiptAttached ? (
+                        <a href={row.receiptUrl} target="_blank" rel="noreferrer">
+                          View Receipt
+                        </a>
+                      ) : (
+                        'No Receipt'
+                      )}
                     </td>
-                  </tr>
-                )}
-
-                {expandedRowId === row.id && expandedMode === 'audit' && (
-                  <tr>
-                    <td colSpan={9}>
-                      <div className="finance-expanded-panel">
-                        {rowActionError && <p className="finance-error">{rowActionError}</p>}
-                        <ul className="finance-audit-list">
-                          {rowAuditEntries.length === 0 && <li>No audit trail available</li>}
-                          {rowAuditEntries.map((entry) => (
-                            <li key={entry.id}>
-                              {formatDateTime(entry.changedAt)} · {entry.changedBy} · [
-                              {entry.action}] {entry.detail}
-                            </li>
+                    <td>
+                      <span className={`eh-badge ${getStatusBadgeClass(row.status)}`}>
+                        {STATUS_LABELS[row.status]}
+                      </span>
+                    </td>
+                    <td>
+                      {row.policyFlags.length === 0
+                        ? '-'
+                        : row.policyFlags.map((flag) => (
+                            <span key={flag} className="eh-badge eh-badge-coral">
+                              {FLAG_LABELS[flag] || flag}
+                            </span>
                           ))}
-                        </ul>
-                        <div className="finance-panel-actions">
-                          <button type="button" onClick={closeExpandedRow}>
-                            Collapse
-                          </button>
-                        </div>
-                      </div>
+                    </td>
+                    <td className="finance-row-actions">
+                      <button type="button" className="eh-btn" onClick={() => openReview(row)}>
+                        Review
+                      </button>
+                      <button type="button" className="eh-btn" onClick={() => openAudit(row)}>
+                        Audit Trail
+                      </button>
                     </td>
                   </tr>
-                )}
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
 
-        <div className="finance-pagination">
-          <button type="button" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+                  {expandedRowId === row.id && expandedMode === 'review' && (
+                    <tr>
+                      <td colSpan={9}>
+                        <div className="finance-expanded-panel">
+                          {rowActionError && (
+                            <div className="eh-alert-card">
+                              <span className="eh-alert-title">{rowActionError}</span>
+                            </div>
+                          )}
+                          <label>
+                            Review Conclusion
+                            <select
+                              className="eh-input"
+                              value={reviewForm.decision}
+                              onChange={(e) =>
+                                setReviewForm((f) => ({ ...f, decision: e.target.value }))
+                              }
+                            >
+                              <option value="APPROVE">Approve</option>
+                              <option value="REJECT">Reject</option>
+                              <option value="REQUEST_INFO">
+                                Request Additional Information / Modification
+                              </option>
+                            </select>
+                          </label>
+                          <label>
+                            Comment
+                            {reviewForm.decision === 'REQUEST_INFO'
+                              ? ' (Required, Employee Will See)'
+                              : ' (Optional)'}
+                            <textarea
+                              className="eh-input"
+                              value={reviewForm.comment}
+                              onChange={(e) =>
+                                setReviewForm((f) => ({ ...f, comment: e.target.value }))
+                              }
+                              placeholder={
+                                reviewForm.decision === 'REQUEST_INFO'
+                                  ? 'For example: Amount and receipt do not match, please verify and resubmit'
+                                  : 'Review comments (optional)'
+                              }
+                            />
+                          </label>
+                          <div className="finance-panel-actions">
+                            <button
+                              type="button"
+                              className="eh-btn eh-btn-approve"
+                              onClick={() => submitReview(row.id)}
+                              disabled={rowActionBusy}
+                            >
+                              Submit Review Result
+                            </button>
+                            <button type="button" className="eh-btn eh-btn-reject" onClick={closeExpandedRow}>
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+
+                  {expandedRowId === row.id && expandedMode === 'audit' && (
+                    <tr>
+                      <td colSpan={9}>
+                        <div className="finance-expanded-panel">
+                          {rowActionError && (
+                            <div className="eh-alert-card">
+                              <span className="eh-alert-title">{rowActionError}</span>
+                            </div>
+                          )}
+                          <ul className="finance-audit-list">
+                            {rowAuditEntries.length === 0 && <li>No audit trail available</li>}
+                            {rowAuditEntries.map((entry) => (
+                              <li key={entry.id}>
+                                {formatDateTime(entry.changedAt)} · {entry.changedBy} · [
+                                {entry.action}] {entry.detail}
+                              </li>
+                            ))}
+                          </ul>
+                          <div className="finance-panel-actions">
+                            <button type="button" className="eh-btn" onClick={closeExpandedRow}>
+                              Collapse
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="eh-pagination">
+          <button type="button" className="eh-btn" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
             Previous Page
           </button>
-          <span>
+          <span className="eh-pagination-info">
             Page {reimbursements.totalPages === 0 ? 0 : page + 1} of {reimbursements.totalPages}
             (Total: {reimbursements.totalElements})
           </span>
           <button
             type="button"
+            className="eh-btn"
             disabled={page + 1 >= reimbursements.totalPages}
             onClick={() => setPage((p) => p + 1)}
           >
