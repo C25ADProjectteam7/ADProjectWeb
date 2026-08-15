@@ -7,12 +7,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.expensehub.webbackend.entity.Approval;
+import com.expensehub.webbackend.mobile.entity.Approval;
 import com.expensehub.webbackend.entity.ApprovalStatus;
 import com.expensehub.webbackend.integration.mobile.MobileExpenseClient;
 import com.expensehub.webbackend.integration.mobile.MobileTripDTO;
 import com.expensehub.webbackend.integration.mobile.MobileUserDTO;
-import com.expensehub.webbackend.repository.ApprovalRepository;
+import com.expensehub.webbackend.mobile.repository.ApprovalRepository;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -29,12 +29,14 @@ class ManagerServiceTest {
     @Mock private MobileExpenseClient mobileExpenseClient;
     @Mock private ApprovalRepository approvalRepository;
     @Mock private BudgetLookupService budgetLookupService;
+    @Mock private org.springframework.jdbc.core.JdbcTemplate mobileJdbcTemplate;
 
     private ManagerService service;
 
     @BeforeEach
     void setUp() {
-        service = new ManagerService(mobileExpenseClient, approvalRepository, budgetLookupService);
+        service = new ManagerService(
+                mobileExpenseClient, approvalRepository, budgetLookupService, mobileJdbcTemplate);
     }
 
     private MobileTripDTO trip(Long id, Long userId, String budget) {

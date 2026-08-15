@@ -47,7 +47,15 @@ services:
 
       MOBILE_API_BASE_URL: ${MOBILE_API_BASE_URL:?set MOBILE_API_BASE_URL in .env}
 
+      # Shared-SQL approvals: point at Mobile's MySQL (exposed on host:3307).
+      MOBILE_DB_URL: ${MOBILE_DB_URL:-jdbc:mysql://host.docker.internal:3307/mobile?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+      MOBILE_DB_USERNAME: ${MOBILE_DB_USERNAME:-root}
+      MOBILE_DB_PASSWORD: ${MOBILE_DB_PASSWORD:-Root@2026!}
+
       SEED_DEMO_USERS: ${SEED_DEMO_USERS:-false}
+    extra_hosts:
+      # Resolve host.docker.internal on Linux hosts (the production server).
+      - "host.docker.internal:host-gateway"
     networks: [internal]
 
   web-frontend:

@@ -1,6 +1,6 @@
-package com.expensehub.webbackend.repository;
+package com.expensehub.webbackend.mobile.repository;
 
-import com.expensehub.webbackend.entity.Approval;
+import com.expensehub.webbackend.mobile.entity.Approval;
 import com.expensehub.webbackend.entity.ApprovalStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 

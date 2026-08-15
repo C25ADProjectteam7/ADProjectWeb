@@ -9,6 +9,15 @@ spring:
       ddl-auto: create-drop
     show-sql: false
 
+# The mobile (shared-SQL) data source also points at H2 in tests - the
+# approvals table gets created there by the mobile EntityManagerFactory.
+mobile:
+  datasource:
+    url: jdbc:h2:mem:mobiletest;DB_CLOSE_DELAY=-1;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
 app:
   jwt:
     secret: test-only-secret-key-not-for-production-use-32chars

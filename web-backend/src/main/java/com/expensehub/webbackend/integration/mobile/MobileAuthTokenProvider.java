@@ -25,7 +25,10 @@ public class MobileAuthTokenProvider {
     // is trusted - Mobile's endpoint does an extra lookup-by-subject on top of
     // signature validation. See commit message for the full diagnosis.
     private static final String MOBILE_SERVICE_ACCOUNT_USERNAME = "web-integration-service";
-    private static final String MOBILE_SERVICE_ACCOUNT_ROLE = "EMPLOYEE";
+    // MANAGER so the service account can call Mobile's admin endpoints
+    // (GET /api/admin/trips) from background jobs that have no logged-in Web
+    // user context - EMPLOYEE would be rejected by the role check.
+    private static final String MOBILE_SERVICE_ACCOUNT_ROLE = "MANAGER";
 
     private final JwtUtil jwtUtil;
 

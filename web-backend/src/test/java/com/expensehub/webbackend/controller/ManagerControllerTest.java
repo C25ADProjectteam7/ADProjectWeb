@@ -9,7 +9,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.expensehub.webbackend.entity.Approval;
+import com.expensehub.webbackend.mobile.entity.Approval;
 import com.expensehub.webbackend.entity.ApprovalStatus;
 import com.expensehub.webbackend.entity.User;
 import com.expensehub.webbackend.repository.UserRepository;

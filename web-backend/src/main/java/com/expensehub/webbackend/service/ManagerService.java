@@ -1,16 +1,18 @@
 package com.expensehub.webbackend.service;
 
-import com.expensehub.webbackend.entity.Approval;
 import com.expensehub.webbackend.entity.ApprovalStatus;
 import com.expensehub.webbackend.integration.mobile.MobileExpenseClient;
 import com.expensehub.webbackend.integration.mobile.MobileTripDTO;
 import com.expensehub.webbackend.integration.mobile.MobileUserDTO;
-import com.expensehub.webbackend.repository.ApprovalRepository;
+import com.expensehub.webbackend.mobile.entity.Approval;
+import com.expensehub.webbackend.mobile.repository.ApprovalRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -33,14 +35,19 @@ public class ManagerService {
     private final MobileExpenseClient mobileExpenseClient;
     private final ApprovalRepository approvalRepository;
     private final BudgetLookupService budgetLookupService;
+    // Raw access to Mobile's trips table - the approval status flip below
+    // (decide) writes the same database the approvals table lives in now.
+    private final JdbcTemplate mobileJdbcTemplate;
 
     public ManagerService(
             MobileExpenseClient mobileExpenseClient,
             ApprovalRepository approvalRepository,
-            BudgetLookupService budgetLookupService) {
+            BudgetLookupService budgetLookupService,
+            @Qualifier("mobileJdbcTemplate") JdbcTemplate mobileJdbcTemplate) {
         this.mobileExpenseClient = mobileExpenseClient;
         this.approvalRepository = approvalRepository;
         this.budgetLookupService = budgetLookupService;
+        this.mobileJdbcTemplate = mobileJdbcTemplate;
     }
 
     public void syncPendingApprovalsFromMobile() {
@@ -104,6 +111,15 @@ public class ManagerService {
         approval.setNote(note);
         approval.setManagerId(managerId);
         approval.setDecidedAt(LocalDateTime.now());
-        return approvalRepository.save(approval);
+        approval = approvalRepository.save(approval);
+
+        // Keep the Mobile app in sync: the approvals table now lives in
+        // Mobile's database, so flip the trip's status in the same database.
+        // trips.status uses the same APPROVED/REJECTED enum values.
+        mobileJdbcTemplate.update(
+                "UPDATE trips SET status = ? WHERE id = ?",
+                decision.name(),
+                approval.getMobileTripId());
+        return approval;
     }
 }

@@ -29,10 +29,14 @@ public class MobileExpenseClient {
         return response.getData() != null ? response.getData() : List.of();
     }
 
-    /** Company-wide trip list, for the Manager approval workflow and analytics. */
+    /** Company-wide trip list, for the Manager approval workflow and analytics.
+     * Uses the SERVICE ACCOUNT token, not the current Web user's: this is also
+     * called by the @Scheduled auto-sync job, which has no logged-in user -
+     * currentUserTokenForMobile() throws there (observed live in prod logs). */
     public List<MobileTripDTO> listAllTrips() {
         MobileApiResponse<List<MobileTripDTO>> response =
-                get("/api/admin/trips", new ParameterizedTypeReference<>() {});
+                get("/api/admin/trips", new ParameterizedTypeReference<>() {},
+                        tokenProvider.serviceAccountTokenForMobile());
         return response.getData() != null ? response.getData() : List.of();
     }
 

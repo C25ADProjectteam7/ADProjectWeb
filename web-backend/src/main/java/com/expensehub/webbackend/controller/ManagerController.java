@@ -1,6 +1,6 @@
 package com.expensehub.webbackend.controller;
 
-import com.expensehub.webbackend.entity.Approval;
+import com.expensehub.webbackend.mobile.entity.Approval;
 import com.expensehub.webbackend.entity.ApprovalStatus;
 import com.expensehub.webbackend.repository.UserRepository;
 import com.expensehub.webbackend.service.ManagerService;

@@ -30,11 +30,19 @@ app:
         base-url: ${MOBILE_API_BASE_URL:http://host.docker.internal:8080}
         service-token: ${MOBILE_SERVICE_TOKEN:not-configured}
 
+# Shared-SQL data source: the Manager approval workflow reads/writes the
+# approvals table directly in Mobile's MySQL instance (see
+# MobileDataSourceConfig). Defaults point at host.docker.internal:3307,
+# which the mobile compose stack exposes on the server.
 mobile:
   api:
     base-url: ${MOBILE_API_BASE_URL:http://localhost:8080}
     connect-timeout-ms: ${MOBILE_API_CONNECT_TIMEOUT_MS:3000}
     read-timeout-ms: ${MOBILE_API_READ_TIMEOUT_MS:8000}
+  datasource:
+    url: ${MOBILE_DB_URL:jdbc:mysql://host.docker.internal:3307/mobile?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${MOBILE_DB_USERNAME:root}
+    password: ${MOBILE_DB_PASSWORD:changeme}
 
 management:
   endpoints:

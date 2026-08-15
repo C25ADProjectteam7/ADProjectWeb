@@ -1,12 +1,12 @@
 package com.expensehub.webbackend.service;
 
-import com.expensehub.webbackend.entity.Approval;
+import com.expensehub.webbackend.mobile.entity.Approval;
 import com.expensehub.webbackend.entity.ApprovalStatus;
 import com.expensehub.webbackend.integration.mobile.MobileExpenseClient;
 import com.expensehub.webbackend.integration.mobile.MobileExpenseDTO;
 import com.expensehub.webbackend.integration.mobile.MobileTripDTO;
 import com.expensehub.webbackend.integration.mobile.MobileUserDTO;
-import com.expensehub.webbackend.repository.ApprovalRepository;
+import com.expensehub.webbackend.mobile.repository.ApprovalRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;

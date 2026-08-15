@@ -1,4 +1,6 @@
-package com.expensehub.webbackend.entity;
+package com.expensehub.webbackend.mobile.entity;
+
+import com.expensehub.webbackend.entity.ApprovalStatus;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -13,7 +15,7 @@ import java.time.LocalDateTime;
 
 /**
  * Corresponds to backlog Item 20: Manager Approval Notifications.
- * The approval record lives in the Web database. It only references the Mobile
+ * The approval record lives in the MOBILE database (shared with the Mobile app, per team decision). It only references the Mobile
  * trip by id (mobileTripId) — there is no cross-database foreign key, since Web
  * and Mobile are two independent MySQL instances.
  * Employee/department/destination/budget fields are a snapshot taken when the
