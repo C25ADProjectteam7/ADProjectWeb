@@ -30,15 +30,24 @@ public class BudgetLookupService {
 
     public Optional<BigDecimal> resolveBudgetLimit(String department) {
         LocalDate today = LocalDate.now();
+
+        // 1.priority: quarterly budget for this quarter
         String quarterLabel = BudgetPeriodResolver.quarterlyLabel(today);
         Optional<BudgetConfig> quarterly = budgetConfigRepository
                 .findByDepartmentAndPeriodTypeAndPeriodLabel(department, BudgetPeriodType.QUARTERLY, quarterLabel);
         if (quarterly.isPresent()) {
             return quarterly.map(BudgetConfig::getAmount);
         }
+        // 2.fallback: annual budget for this year
         String yearLabel = BudgetPeriodResolver.annualLabel(today);
+        Optional<BudgetConfig> annual = budgetConfigRepository
+                .findByDepartmentAndPeriodTypeAndPeriodLabel(department, BudgetPeriodType.ANNUAL, yearLabel);
+        if (annual.isPresent()) {
+            return annual.map(BudgetConfig::getAmount);
+        }
+        // 3.fallback: most recent budget for this department, regardless of period type
         return budgetConfigRepository
-                .findByDepartmentAndPeriodTypeAndPeriodLabel(department, BudgetPeriodType.ANNUAL, yearLabel)
+                .findTopByDepartmentOrderByPeriodLabelDesc(department)
                 .map(BudgetConfig::getAmount);
     }
 }

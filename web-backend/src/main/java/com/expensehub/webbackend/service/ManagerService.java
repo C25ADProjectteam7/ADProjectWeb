@@ -101,7 +101,7 @@ public class ManagerService {
                         && !"CANCELLED".equalsIgnoreCase(trip.getStatus()))
                         .ifPresent(a -> {
                             BigDecimal latestLimit = limit.orElse(null);
-                            if (!sameMoney(a.getDepartmentBudgetLimit(), latestLimit)) {
+                            if (a.getDepartmentBudgetLimit() == null || !sameMoney(a.getDepartmentBudgetLimit(), latestLimit)) {
                                 a.setDepartmentBudgetLimit(latestLimit);
                                 approvalRepository.save(a);
                             }

@@ -14,4 +14,6 @@ public interface BudgetConfigRepository extends JpaRepository<BudgetConfig, Long
     List<BudgetConfig> findByDepartment(String department);
 
     List<BudgetConfig> findAllByOrderByDepartmentAscPeriodLabelAsc();
+    
+    Optional<BudgetConfig> findTopByDepartmentOrderByPeriodLabelDesc(String department);
 }
