@@ -158,6 +158,7 @@ jobs:
           push: false
           load: true
           tags: expense-hub-backend:ci-${{ github.sha }}
+          no-cache: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
