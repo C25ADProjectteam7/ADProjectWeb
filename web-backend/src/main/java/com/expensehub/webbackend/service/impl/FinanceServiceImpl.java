@@ -1,4 +1,4 @@
-package com.expensehub.webbackend.service.impl;
+﻿package com.expensehub.webbackend.service.impl;
 
 import com.expensehub.webbackend.dto.AuditEntryResponse;
 import com.expensehub.webbackend.dto.BudgetConfigRequest;
@@ -21,6 +21,7 @@ import com.expensehub.webbackend.repository.BudgetConfigRepository;
 import com.expensehub.webbackend.repository.ReimbursementAuditLogRepository;
 import com.expensehub.webbackend.service.BudgetPeriodResolver;
 import com.expensehub.webbackend.service.FinanceService;
+import com.expensehub.webbackend.service.ExpenseApprovalWorkflowService;
 import com.expensehub.webbackend.service.ReimbursementPolicyEngine;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -51,6 +52,7 @@ public class FinanceServiceImpl implements FinanceService {
     private final ReimbursementPolicyEngine policyEngine;
     private final ReimbursementExcelExporter excelExporter;
     private final MobileExpenseClient mobileExpenseClient;
+    private final ExpenseApprovalWorkflowService workflowService;
 
     public FinanceServiceImpl(
             BudgetConfigRepository budgetConfigRepository,
@@ -58,13 +60,15 @@ public class FinanceServiceImpl implements FinanceService {
             ReimbursementAuditLogRepository reimbursementAuditLogRepository,
             ReimbursementPolicyEngine policyEngine,
             ReimbursementExcelExporter excelExporter,
-            MobileExpenseClient mobileExpenseClient) {
+            MobileExpenseClient mobileExpenseClient,
+            ExpenseApprovalWorkflowService workflowService) {
         this.budgetConfigRepository = budgetConfigRepository;
         this.budgetAuditLogRepository = budgetAuditLogRepository;
         this.reimbursementAuditLogRepository = reimbursementAuditLogRepository;
         this.policyEngine = policyEngine;
         this.excelExporter = excelExporter;
         this.mobileExpenseClient = mobileExpenseClient;
+        this.workflowService = workflowService;
     }
 
     //budget allocation
@@ -198,6 +202,7 @@ public class FinanceServiceImpl implements FinanceService {
         List<ResolvedExpense> all = fetchResolvedExpenses();
         List<ReimbursementResponse> filtered =
                 filterAndSort(all, status, department, category, from, to).stream()
+                        .filter(r -> workflowService.isReadyForFinance(r.id()))
                         .map(r -> toResponse(r, all))
                         .toList();
 
@@ -224,6 +229,11 @@ public class FinanceServiceImpl implements FinanceService {
     @Transactional
     public ReimbursementResponse reviewReimbursement(
             Long id, ReimbursementReviewRequest request, String actor) {
+        // Ensure the expense is ready for finance review
+        if (!workflowService.isReadyForFinance(id)) {
+            throw new IllegalStateException(
+                "Expense " + id + " requires manager approval before finance can review it.");
+        }
         MobileExpenseDTO updated =
                 switch (request.decision()) {
                     case APPROVE -> mobileExpenseClient.approve(id, request.comment());
@@ -281,6 +291,7 @@ public class FinanceServiceImpl implements FinanceService {
         List<ResolvedExpense> all = fetchResolvedExpenses();
         List<ReimbursementResponse> records =
                 filterAndSort(all, status, department, category, from, to).stream()
+                        .filter(r -> workflowService.isReadyForFinance(r.id()))
                         .map(r -> toResponse(r, all))
                         .toList();
         return excelExporter.export(records);
@@ -292,6 +303,7 @@ public class FinanceServiceImpl implements FinanceService {
         List<ResolvedExpense> resolved = new ArrayList<>(raw.size());
         for (MobileExpenseDTO e : raw) {
             MobileUserDTO user = resolveUser(userCache, e.getUserId());
+            workflowService.updateWorkflowForExpense(e.getId(), e, user);
             resolved.add(
                     new ResolvedExpense(
                             e.getId(),

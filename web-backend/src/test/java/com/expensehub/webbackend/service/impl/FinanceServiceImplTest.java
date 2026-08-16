@@ -1,7 +1,8 @@
-package com.expensehub.webbackend.service.impl;
+﻿package com.expensehub.webbackend.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -20,6 +21,7 @@ import com.expensehub.webbackend.integration.mobile.MobileUserDTO;
 import com.expensehub.webbackend.repository.BudgetAuditLogRepository;
 import com.expensehub.webbackend.repository.BudgetConfigRepository;
 import com.expensehub.webbackend.repository.ReimbursementAuditLogRepository;
+import com.expensehub.webbackend.service.ExpenseApprovalWorkflowService;
 import com.expensehub.webbackend.service.ReimbursementPolicyEngine;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -30,13 +32,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Page;
 
-
 class FinanceServiceImplTest {
 
     private BudgetConfigRepository budgetConfigRepository;
     private BudgetAuditLogRepository budgetAuditLogRepository;
     private ReimbursementAuditLogRepository reimbursementAuditLogRepository;
     private MobileExpenseClient mobileExpenseClient;
+    private ExpenseApprovalWorkflowService workflowService;
     private FinanceServiceImpl financeService;
 
     @BeforeEach
@@ -45,6 +47,7 @@ class FinanceServiceImplTest {
         budgetAuditLogRepository = mock(BudgetAuditLogRepository.class);
         reimbursementAuditLogRepository = mock(ReimbursementAuditLogRepository.class);
         mobileExpenseClient = mock(MobileExpenseClient.class);
+        workflowService = mock(ExpenseApprovalWorkflowService.class);
 
         financeService =
                 new FinanceServiceImpl(
@@ -53,8 +56,10 @@ class FinanceServiceImplTest {
                         reimbursementAuditLogRepository,
                         new ReimbursementPolicyEngine(),
                         new ReimbursementExcelExporter(),
-                        mobileExpenseClient);
+                        mobileExpenseClient,
+                        workflowService);
 
+        when(workflowService.isReadyForFinance(anyLong())).thenReturn(true);
         when(budgetConfigRepository.findByDepartmentAndPeriodTypeAndPeriodLabel(
                         any(), any(), any()))
                 .thenReturn(Optional.empty());
