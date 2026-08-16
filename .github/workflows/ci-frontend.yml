@@ -1,5 +1,10 @@
 name: Web Frontend CI/CD
 
+permissions:
+  contents: read
+  security-events: write
+  actions: write # required for cache save (otherwise cache is read-only)
+
 on:
   pull_request:
     branches: [main, develop]
@@ -22,8 +27,11 @@ env:
   NODE_VERSION: '20'
 
 jobs:
-
+  # ============================================================
+  # Stage 1: Build & Automated Testing
+  # ============================================================
   build-and-test:
+    name: Build & Unit Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -50,7 +58,7 @@ jobs:
       - name: Build production bundle
         run: npm run build
 
-      - name: Upload coverage (for SonarQube job)
+      - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
@@ -62,16 +70,54 @@ jobs:
           name: dist
           path: web-frontend/dist
 
-  security-scan:
+  # ============================================================
+  # Stage 2a: Secret Scanning (secure coding practice)
+  # Catches credentials/API keys/tokens accidentally committed,
+  # including in past commits — not just the current diff.
+  # ============================================================
+  secret-scan:
+    name: Secret Scanning
     runs-on: ubuntu-latest
-    needs: build-and-test
-    env:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Scan for committed secrets (TruffleHog)
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.pull_request.base.sha || '' }}
+          head: ${{ github.event.pull_request.head.sha || github.sha }}
+          extra_args: --results=verified,unknown --fail
+
+  # ============================================================
+  # Stage 2b: SAST — CodeQL
+  # ============================================================
+  codeql:
+    name: CodeQL SAST
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"
+
+  # ============================================================
+  # Stage 2c: Dependency Vulnerability Scan
+  # ============================================================
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -83,27 +129,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Download coverage report
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage-report
-          path: web-frontend/coverage
-
-      - name: SonarQube Scan
-        if: ${{ env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' }}
-        uses: SonarSource/sonarqube-scan-action@v3
-        with:
-          projectBaseDir: web-frontend
-
-      - name: SonarQube Quality Gate check
-        if: ${{ env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' }}
-        uses: SonarSource/sonarqube-quality-gate-action@v1
-        timeout-minutes: 5
-
-      - name: SonarQube skipped notice
-        if: ${{ env.SONAR_TOKEN == '' || env.SONAR_HOST_URL == '' }}
-        run: echo "::notice::SONAR_TOKEN/SONAR_HOST_URL have not been set, skipping SonarQube scan."
-
       - name: Snyk dependency vulnerability scan
         uses: snyk/actions/node@master
         env:
@@ -113,9 +138,13 @@ jobs:
           # Point Snyk at the frontend manifest explicitly.
           args: --file=web-frontend/package.json --severity-threshold=high
 
+  # ============================================================
+  # Stage 3: Docker Build + Container Image Scan
+  # ============================================================
   docker-build:
+    name: Docker Build & Image Scan
     runs-on: ubuntu-latest
-    needs: [build-and-test, security-scan]
+    needs: [codeql, dependency-scan, secret-scan]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
@@ -123,16 +152,51 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # load: true — build locally so Trivy can scan it before it goes anywhere
       - name: Build image
         uses: docker/build-push-action@v6
         with:
           context: web-frontend
           push: false
+          load: true
           tags: expense-hub-web:ci-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # Trivy DB is large (~940MB); cache it so we don't re-download every run.
+      - uses: actions/cache/restore@v4
+        with:
+          path: .cache/trivy
+          key: cache-trivy-data-${{ runner.os }}-v1
+          restore-keys: cache-trivy-data-${{ runner.os }}-
+
+      - name: Trivy container image scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: expense-hub-web:ci-${{ github.sha }}
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL
+          exit-code: '1' # fail the build on unremediated CRITICAL CVEs
+          cache: 'false'
+          cache-dir: .cache/trivy
+
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: .cache/trivy
+          key: cache-trivy-data-${{ runner.os }}-v1
+
+      - uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+
+  # ============================================================
+  # Stage 4: Deploy (main branch only, after image passes scan)
+  # ============================================================
   deploy:
+    name: Deploy
     runs-on: ubuntu-latest
     needs: docker-build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
