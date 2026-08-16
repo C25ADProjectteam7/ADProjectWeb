@@ -108,7 +108,7 @@ export default function FinanceReimbursementPage() {
     loadReimbursements();
   }, [loadReimbursements]);
 
-// budget allocation
+  // budget allocation
   async function handleBudgetSubmit(event) {
     event.preventDefault();
     setBudgetError('');
@@ -223,7 +223,6 @@ export default function FinanceReimbursementPage() {
       setRowActionBusy(false);
     }
   }
-
 
   function getStatusBadgeClass(status) {
     switch (status) {
@@ -343,7 +342,11 @@ export default function FinanceReimbursementPage() {
                     </td>
                     <td>{b.updatedBy ? `${b.updatedBy} · ${formatDateTime(b.updatedAt)}` : '-'}</td>
                     <td>
-                      <button type="button" className="eh-btn" onClick={() => toggleBudgetAudit(b.id)}>
+                      <button
+                        type="button"
+                        className="eh-btn"
+                        onClick={() => toggleBudgetAudit(b.id)}
+                      >
                         {openBudgetAuditId === b.id ? 'Collapse Records' : 'View Changes'}
                       </button>
                     </td>
@@ -438,7 +441,12 @@ export default function FinanceReimbursementPage() {
               onChange={(e) => handleFilterChange('to', e.target.value)}
             />
           </label>
-          <button type="button" className="eh-btn" onClick={() => loadReimbursements()} disabled={listLoading}>
+          <button
+            type="button"
+            className="eh-btn"
+            onClick={() => loadReimbursements()}
+            disabled={listLoading}
+          >
             {listLoading ? 'Loading…' : 'Refresh'}
           </button>
           <button type="button" className="eh-btn" onClick={handleExport} disabled={exporting}>
@@ -568,7 +576,11 @@ export default function FinanceReimbursementPage() {
                             >
                               Submit Review Result
                             </button>
-                            <button type="button" className="eh-btn eh-btn-reject" onClick={closeExpandedRow}>
+                            <button
+                              type="button"
+                              className="eh-btn eh-btn-reject"
+                              onClick={closeExpandedRow}
+                            >
                               Cancel
                             </button>
                           </div>
@@ -611,7 +623,12 @@ export default function FinanceReimbursementPage() {
         </div>
 
         <div className="eh-pagination">
-          <button type="button" className="eh-btn" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+          <button
+            type="button"
+            className="eh-btn"
+            disabled={page === 0}
+            onClick={() => setPage((p) => p - 1)}
+          >
             Previous Page
           </button>
           <span className="eh-pagination-info">

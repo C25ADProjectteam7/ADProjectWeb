@@ -117,8 +117,11 @@
   background: var(--paper);
   color: var(--ink);
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
   min-height: 36px;
   white-space: nowrap;
 }
@@ -176,7 +179,9 @@
   font-family: 'IBM Plex Sans', sans-serif;
   width: 150px;
   background: var(--paper);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 .eh-input:focus {
   border-color: var(--brass);
@@ -248,7 +253,6 @@
   padding: 0;
 }
 
-
 .finance-row-actions {
   display: flex;
   gap: 6px;
@@ -274,5 +278,4 @@
 
 .finance-inline-form button,
 .finance-filters button {
-
 }
