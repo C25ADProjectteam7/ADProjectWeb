@@ -190,7 +190,12 @@ jobs:
         if: always()
         with:
           sarif_file: trivy-results.sarif
-
+      - name: Upload Trivy SARIF as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-results
+          path: trivy-results.sarif
   # ============================================================
   # Stage 4: Deploy (main branch only, after image passes scan)
   # ============================================================
