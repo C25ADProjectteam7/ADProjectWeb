@@ -303,6 +303,9 @@ public class FinanceServiceImpl implements FinanceService {
         List<ResolvedExpense> resolved = new ArrayList<>(raw.size());
         for (MobileExpenseDTO e : raw) {
             MobileUserDTO user = resolveUser(userCache, e.getUserId());
+            if (user != null) {
+                workflowService.updateWorkflowForExpense(e.getId(), e, user);
+            }
             workflowService.updateWorkflowForExpense(e.getId(), e, user);
             resolved.add(
                     new ResolvedExpense(
