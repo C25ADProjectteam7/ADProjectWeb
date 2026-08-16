@@ -1,2 +1,0 @@
-# False positive for 64-bit environments (only affects 32-bit platforms)
-CVE-2026-31789

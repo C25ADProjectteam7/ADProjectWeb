@@ -77,7 +77,7 @@ jobs:
           path: ./
           base: ${{ github.event.pull_request.base.sha || '' }}
           head: ${{ github.event.pull_request.head.sha || github.sha }}
-          extra_args: --results=verified,unknown
+          extra_args: --results=verified,unknown --fail
 
   # ============================================================
   # Stage 2b: SAST — CodeQL
@@ -110,6 +110,9 @@ jobs:
 
   # ============================================================
   # Stage 2c: Dependency Vulnerability Scan
+  # Java library CVEs are owned here (Snyk reads pom.xml).
+  # Trivy in the docker-build stage only scans OS packages,
+  # so there is no overlap between the two tools.
   # ============================================================
   dependency-scan:
     name: Dependency Vulnerability Scan
@@ -137,7 +140,7 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
   # ============================================================
-  # Stage 3: Docker Build + Container Image Scan
+  # Stage 3: Docker Build + Container Image Scan (OS layer only)
   # ============================================================
   docker-build:
     name: Docker Build & Image Scan
@@ -158,25 +161,26 @@ jobs:
           push: false
           load: true
           tags: expense-hub-backend:ci-${{ github.sha }}
-          no-cache: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Trivy DB is large (~940MB); cache it so we don't re-download every run.
+      # Trivy DB cache — avoids re-downloading ~76MB every run.
       - uses: actions/cache/restore@v4
         with:
           path: .cache/trivy
           key: cache-trivy-data-${{ runner.os }}-v1
           restore-keys: cache-trivy-data-${{ runner.os }}-
 
-      - name: Trivy container image scan
+      - name: Trivy container image scan (OS packages only)
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: expense-hub-backend:ci-${{ github.sha }}
           format: sarif
           output: trivy-results.sarif
           severity: CRITICAL
-          exit-code: '1' # fail the build on unremediated CRITICAL CVEs
+          exit-code: '1'   # block deploy on unpatched CRITICAL OS CVEs
+          vuln-type: os     # OS packages only; Java JAR CVEs handled by Snyk
+          scanners: vuln    # skip secret scan (already done by TruffleHog job)
           cache: 'false'
           cache-dir: .cache/trivy
 
@@ -190,12 +194,7 @@ jobs:
         if: always()
         with:
           sarif_file: trivy-results.sarif
-      - name: Upload Trivy SARIF as artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: trivy-results
-          path: trivy-results.sarif
+
   # ============================================================
   # Stage 4: Deploy (main branch only, after image passes scan)
   # ============================================================

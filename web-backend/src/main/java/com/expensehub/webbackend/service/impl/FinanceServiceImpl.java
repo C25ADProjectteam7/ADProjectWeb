@@ -1,4 +1,4 @@
-﻿package com.expensehub.webbackend.service.impl;
+package com.expensehub.webbackend.service.impl;
 
 import com.expensehub.webbackend.dto.AuditEntryResponse;
 import com.expensehub.webbackend.dto.BudgetConfigRequest;
