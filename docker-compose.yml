@@ -20,6 +20,7 @@ services:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-changeme_root}
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./mysql-certs:/etc/mysql/ssl:ro
     healthcheck:
       test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
       interval: 10s
