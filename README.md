@@ -12,6 +12,36 @@ docker-compose.yml   本地/服务器整体编排（MySQL + 后端 + 前端 + �
   ci-backend.yml    后端 CI/CD
 ```
 
+### 项目状态概览（截至 2026-08-16）
+
+- 全栈基础设施整合已完成：React 前端 + Spring Boot 后端 + MySQL + Nginx API Gateway + Docker Compose 编排。
+- GitHub Actions 的前后端 CI/CD 流水线已上线，并能在 `main` 分支上自动执行构建、测试、安全扫描和部署。
+- 云端部署已验证可用：已在 DigitalOcean Ubuntu Droplet 上完成部署验证，应用栈可正常运行。
+- 业务功能层面仍处于迭代中：截至当前，尚无单个业务功能达到“集成测试通过 / 已部署到云端”的正式交付状态；当前仓库主要体现的是基础骨架和全栈集成基础设施。
+
+### Project Status Report
+
+| ID | Features | Implementation Technologies | Requirements | Development | Integration Testing | Deployed to Cloud |
+|---|---|---|---|---|---|---|
+| 1 | Secure Account Login | Spring Boot, Spring Security, JWT, RBAC, MySQL, React.js (login form) | I | I |  |  |
+| 2 | Admin Account Management (create/edit/disable) | React.js, Spring Boot, MySQL | I | I |  |  |
+| 3 | Forgotten Password Reset via Email | Spring Boot, Email service (SMTP/SES), JWT reset token |  |  |  |  |
+| 15 | Budget vs. Actual Spending Dashboard | React.js, Chart.js, Spring Boot REST API | I |  |  |  |
+| 16 | Department Budget Configuration | React.js, Spring Boot, MySQL | I |  |  |  |
+| 17 | Reimbursement Review with Policy Flags | React.js, Spring Boot, rule engine | I |  |  |  |
+| 18 | Export Expense Data to Excel | React.js, Apache POI | I |  |  |  |
+| 19 | Edit/Correct Submitted Claims | React.js, Spring Boot REST API | I |  |  |  |
+| 20 | Manager Approval Notifications | Spring Boot, Email/Push (SES/FCM), React.js, MySQL | I |  |  |  |
+| 23 | Departmental Expense Comparison Chart | React.js, Chart.js | I |  |  |  |
+| 24 | Employee Travel Frequency Statistics | React.js, Chart.js | I |  |  |  |
+| 25 | Budget Overspending Alert Dashboard | React.js, Chart.js, anomaly detection rules | I |  |  |  |
+| 26 | Data Encryption at Rest and in Transit | AES-256, TLS 1.2+/HTTPS, Spring Boot field-level encryption |  |  |  |  |
+| 27 | RBAC and Sensitive-Data Access Audit Log | Spring Security RBAC, audit log table, MySQL | C | I |  |  |
+| 28 | CI/CD Pipeline with Security Scanning | GitHub Actions, Docker, SonarQube / Snyk | C | C | C | C |
+| 29 | Unified Cloud Gateway Infrastructure | DigitalOcean Ubuntu Droplet (backlog spec: AWS EC2/RDS), Docker Compose, Nginx (API Gateway) | C | C | C | C |
+
+说明：`C = Completed`，`I = In Progress`。当前项目已完成基础设施层和部署层的集成与上线；后续业务功能项仍需继续按需求、设计、开发和集成测试节奏推进。
+
 ### 整体架构
 
 ```

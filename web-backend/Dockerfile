@@ -7,7 +7,8 @@ COPY src ./src
 RUN mvn -B package -DskipTests
 
 # ---- runtime ----
-FROM eclipse-temurin:21-jre-alpine3.21 AS runtime
+FROM eclipse-temurin:21-jre-alpine AS runtime
+RUN apk upgrade --no-cache
 WORKDIR /app
 RUN addgroup -S spring && adduser -S spring -G spring
 COPY --from=build /app/target/*.jar app.jar
