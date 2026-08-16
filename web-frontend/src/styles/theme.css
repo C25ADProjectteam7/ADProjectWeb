@@ -90,6 +90,41 @@
 .eh-table-scroll .eh-table {
   min-width: 860px;
 }
+
+.eh-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.eh-table thead th {
+  padding: 10px 14px;
+  background: var(--runway);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--line);
+}
+.eh-table tbody td {
+  padding: 12px 14px;
+  color: var(--ink);
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--line);
+}
+.eh-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.eh-table tbody tr:hover {
+  background: #fbfcfb;
+}
+/* Last column in each header row holds the row-action buttons and has no
+   label — give it a stable width so it doesn't shrink/shift with content. */
+.eh-table thead th:last-child {
+  width: 1%;
+}
 .eh-pagination {
   display: flex;
   align-items: center;
