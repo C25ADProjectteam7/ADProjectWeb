@@ -24,6 +24,11 @@ const menuItems = [
     allowedRoles: ['ADMIN', 'MANAGER'],
   },
   {
+    label: 'Expense Approvals',
+    path: '/manager/expense-approvals',
+    allowedRoles: ['ADMIN', 'MANAGER'],
+  },
+  {
     label: 'Analytics',
     path: '/analytics',
     allowedRoles: ['ADMIN', 'FINANCE_STAFF', 'MANAGER'],

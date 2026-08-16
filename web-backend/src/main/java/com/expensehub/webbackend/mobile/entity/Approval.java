@@ -1,6 +1,7 @@
 package com.expensehub.webbackend.mobile.entity;
 
 import com.expensehub.webbackend.entity.ApprovalStatus;
+import com.expensehub.webbackend.security.EncryptedStringConverter;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -40,9 +41,20 @@ public class Approval {
 
     private Long managerId;
 
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(columnDefinition = "TEXT")
     private String tripTitle;
+
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(columnDefinition = "TEXT")
     private String employeeName;
+
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(columnDefinition = "TEXT")
     private String department;
+
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(columnDefinition = "TEXT")
     private String destination;
     private LocalDate startDate;
     private LocalDate endDate;
@@ -53,6 +65,8 @@ public class Approval {
     @Column(nullable = false)
     private ApprovalStatus status;
 
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(columnDefinition = "TEXT")
     private String note;
 
     @Column(nullable = false)

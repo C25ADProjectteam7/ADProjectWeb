@@ -1,5 +1,6 @@
 package com.expensehub.webbackend.entity;
 
+import com.expensehub.webbackend.security.EncryptedStringConverter;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -26,7 +27,8 @@ public class BudgetAuditLog {
     @Column(nullable = false)
     private Long budgetId;
 
-    @Column(nullable = false)
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String department;
 
     @Column(nullable = false)
@@ -37,7 +39,8 @@ public class BudgetAuditLog {
     @Column(nullable = false)
     private BigDecimal newAmount;
 
-    @Column(nullable = false)
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String changedBy;
 
     @Column(nullable = false)

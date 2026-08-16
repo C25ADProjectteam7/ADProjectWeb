@@ -2,6 +2,7 @@ package com.expensehub.webbackend.controller;
 
 import com.expensehub.webbackend.mobile.entity.Approval;
 import com.expensehub.webbackend.entity.ApprovalStatus;
+import com.expensehub.webbackend.entity.User;
 import com.expensehub.webbackend.repository.UserRepository;
 import com.expensehub.webbackend.service.ManagerService;
 import java.util.List;
@@ -57,7 +58,7 @@ public class ManagerController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
         return userRepository
-                .findByEmail(email)
+                .findByEmailHash(User.sha256Hex(email.toLowerCase().trim()))
                 .map(user -> user.getId())
                 .orElse(null);
     }

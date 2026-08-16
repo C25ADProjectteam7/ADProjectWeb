@@ -19,5 +19,7 @@ mobile:
     password:
 
 app:
+  encryption:
+    secret: ooiCL5WUqNaSOTFf8hiX+xYg9qaaAS5Kw7UUzvTIVn0=  # test-only 32-byte key (Base64)
   jwt:
     secret: test-only-secret-key-not-for-production-use-32chars

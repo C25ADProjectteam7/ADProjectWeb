@@ -2,6 +2,7 @@ package com.expensehub.webbackend.service.impl;
 
 import com.expensehub.webbackend.entity.User;
 import com.expensehub.webbackend.repository.UserRepository;
+import com.expensehub.webbackend.security.HashUtil;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -21,7 +22,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         User user =
                 userRepository
-                        .findByEmail(email)
+                        .findByEmailHash(HashUtil.sha256Hex(email.toLowerCase().trim()))
                         .orElseThrow(
                                 () ->
                                         new UsernameNotFoundException(

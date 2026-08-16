@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import { financeApi } from '../api/financeApi.js';
+import '../styles/theme.css';
 
 const CATEGORIES = ['FLIGHT', 'HOTEL', 'MEAL', 'TRANSPORT', 'OTHER'];
 const STATUSES = ['SUBMITTED', 'APPROVED', 'REJECTED', 'NEEDS_INFO'];
@@ -245,16 +246,16 @@ export default function FinanceReimbursementPage() {
         export to Excel.
       </p>
 
-      {/* Budget allocation*/}
+      {/* Budget allocation */}
+      <div className="eh-section-title">Department Budget Configuration</div>
       <div className="eh-card">
-        <h3>Department Budget Configuration</h3>
         {budgetError && (
           <div className="eh-alert-card">
             <span className="eh-alert-title">{budgetError}</span>
           </div>
         )}
 
-        <form className="finance-inline-form" onSubmit={handleBudgetSubmit}>
+        <form className="eh-filter-bar" onSubmit={handleBudgetSubmit}>
           <label>
             Department
             <input
@@ -299,7 +300,7 @@ export default function FinanceReimbursementPage() {
             />
           </label>
           <button type="submit" className="eh-btn eh-btn-approve" disabled={budgetSaving}>
-            {budgetSaving ? 'Saving…' : 'Save Budget'}
+            {budgetSaving ? 'Saving…' : 'Create / Update Budget'}
           </button>
         </form>
 
@@ -354,14 +355,34 @@ export default function FinanceReimbursementPage() {
                   {openBudgetAuditId === b.id && (
                     <tr>
                       <td colSpan={8}>
-                        <ul className="finance-audit-list">
-                          {budgetAuditEntries.length === 0 && <li>No change records available</li>}
-                          {budgetAuditEntries.map((entry) => (
-                            <li key={entry.id}>
-                              {formatDateTime(entry.changedAt)} · {entry.changedBy} · {entry.detail}
-                            </li>
-                          ))}
-                        </ul>
+                        <div
+                          style={{
+                            background: 'var(--runway)',
+                            borderRadius: 10,
+                            padding: '12px 16px',
+                          }}
+                        >
+                          {budgetAuditEntries.length === 0 ? (
+                            <div className="eh-empty">No change records available</div>
+                          ) : (
+                            <ul
+                              style={{
+                                margin: 0,
+                                paddingLeft: 18,
+                                fontSize: 13,
+                                lineHeight: 1.8,
+                                color: 'var(--ink-soft)',
+                              }}
+                            >
+                              {budgetAuditEntries.map((entry) => (
+                                <li key={entry.id}>
+                                  {formatDateTime(entry.changedAt)} · {entry.changedBy} ·{' '}
+                                  {entry.detail}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )}
@@ -372,17 +393,17 @@ export default function FinanceReimbursementPage() {
         </div>
       </div>
 
-      {/* ---------------- Reimbursement Requests / Review (Item 17) ---------------- */}
+      {/* Reimbursement Requests / Review */}
+      <div className="eh-section-title">Reimbursement Requests</div>
       <div className="eh-card">
-        <h3>Reimbursement Requests</h3>
-        <p className="eh-subtitle">
+        <p className="eh-subtitle" style={{ marginBottom: 14 }}>
           Data comes from the Mobile app submitted by employees. When errors are found in
           amount/category information, use the &quot;Request Additional Information&quot; button
           below to reject the request, and employees will be able to modify it in the App and it
           will reappear in the pending review list — finance staff cannot directly edit the values.
         </p>
 
-        <div className="finance-filters">
+        <div className="eh-filter-bar">
           <label>
             Status
             <select
@@ -514,26 +535,46 @@ export default function FinanceReimbursementPage() {
                             </span>
                           ))}
                     </td>
-                    <td className="finance-row-actions">
-                      <button type="button" className="eh-btn" onClick={() => openReview(row)}>
-                        Review
-                      </button>
-                      <button type="button" className="eh-btn" onClick={() => openAudit(row)}>
-                        Audit Trail
-                      </button>
+                    <td>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <button type="button" className="eh-btn" onClick={() => openReview(row)}>
+                          Review
+                        </button>
+                        <button type="button" className="eh-btn" onClick={() => openAudit(row)}>
+                          Audit Trail
+                        </button>
+                      </div>
                     </td>
                   </tr>
 
                   {expandedRowId === row.id && expandedMode === 'review' && (
                     <tr>
                       <td colSpan={9}>
-                        <div className="finance-expanded-panel">
+                        <div
+                          style={{
+                            background: 'var(--runway)',
+                            borderRadius: 10,
+                            padding: '14px 16px',
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: 12,
+                            alignItems: 'flex-start',
+                          }}
+                        >
                           {rowActionError && (
-                            <div className="eh-alert-card">
+                            <div className="eh-alert-card" style={{ width: '100%' }}>
                               <span className="eh-alert-title">{rowActionError}</span>
                             </div>
                           )}
-                          <label>
+                          <label
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              fontSize: 12,
+                              color: 'var(--ink-soft)',
+                              gap: 4,
+                            }}
+                          >
                             Review Conclusion
                             <select
                               className="eh-input"
@@ -549,13 +590,24 @@ export default function FinanceReimbursementPage() {
                               </option>
                             </select>
                           </label>
-                          <label>
+                          <label
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              fontSize: 12,
+                              color: 'var(--ink-soft)',
+                              gap: 4,
+                              flex: 1,
+                              minWidth: 200,
+                            }}
+                          >
                             Comment
                             {reviewForm.decision === 'REQUEST_INFO'
                               ? ' (Required, Employee Will See)'
                               : ' (Optional)'}
                             <textarea
                               className="eh-input"
+                              style={{ minWidth: 280, minHeight: 60 }}
                               value={reviewForm.comment}
                               onChange={(e) =>
                                 setReviewForm((f) => ({ ...f, comment: e.target.value }))
@@ -567,7 +619,7 @@ export default function FinanceReimbursementPage() {
                               }
                             />
                           </label>
-                          <div className="finance-panel-actions">
+                          <div style={{ display: 'flex', gap: 8, alignSelf: 'flex-end' }}>
                             <button
                               type="button"
                               className="eh-btn eh-btn-approve"
@@ -592,22 +644,46 @@ export default function FinanceReimbursementPage() {
                   {expandedRowId === row.id && expandedMode === 'audit' && (
                     <tr>
                       <td colSpan={9}>
-                        <div className="finance-expanded-panel">
+                        <div
+                          style={{
+                            background: 'var(--runway)',
+                            borderRadius: 10,
+                            padding: '14px 16px',
+                          }}
+                        >
                           {rowActionError && (
                             <div className="eh-alert-card">
                               <span className="eh-alert-title">{rowActionError}</span>
                             </div>
                           )}
-                          <ul className="finance-audit-list">
-                            {rowAuditEntries.length === 0 && <li>No audit trail available</li>}
-                            {rowAuditEntries.map((entry) => (
-                              <li key={entry.id}>
-                                {formatDateTime(entry.changedAt)} · {entry.changedBy} · [
-                                {entry.action}] {entry.detail}
-                              </li>
-                            ))}
-                          </ul>
-                          <div className="finance-panel-actions">
+                          {rowAuditEntries.length === 0 ? (
+                            <div className="eh-empty">No audit trail available</div>
+                          ) : (
+                            <ul
+                              style={{
+                                margin: 0,
+                                paddingLeft: 18,
+                                fontSize: 13,
+                                lineHeight: 1.8,
+                                color: 'var(--ink-soft)',
+                              }}
+                            >
+                              {rowAuditEntries.map((entry) => (
+                                <li key={entry.id}>
+                                  {formatDateTime(entry.changedAt)} · {entry.changedBy} · [
+                                  {entry.action}] {entry.detail}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          <div
+                            style={{
+                              display: 'flex',
+                              gap: 8,
+                              justifyContent: 'flex-end',
+                              marginTop: 12,
+                            }}
+                          >
                             <button type="button" className="eh-btn" onClick={closeExpandedRow}>
                               Collapse
                             </button>
@@ -629,7 +705,7 @@ export default function FinanceReimbursementPage() {
             disabled={page === 0}
             onClick={() => setPage((p) => p - 1)}
           >
-            Previous Page
+            ‹ Prev
           </button>
           <span className="eh-pagination-info">
             Page {reimbursements.totalPages === 0 ? 0 : page + 1} of {reimbursements.totalPages}
@@ -641,7 +717,7 @@ export default function FinanceReimbursementPage() {
             disabled={page + 1 >= reimbursements.totalPages}
             onClick={() => setPage((p) => p + 1)}
           >
-            Next Page
+            Next ›
           </button>
         </div>
       </div>

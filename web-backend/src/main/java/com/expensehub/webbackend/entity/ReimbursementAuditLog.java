@@ -1,5 +1,6 @@
 package com.expensehub.webbackend.entity;
 
+import com.expensehub.webbackend.security.EncryptedStringConverter;
 import jakarta.persistence.*;
 import java.time.Instant;
 import lombok.AllArgsConstructor;
@@ -29,14 +30,17 @@ public class ReimbursementAuditLog {
     private Long requestId;
 
     /** REVIEW 或 EDIT */
-    @Column(nullable = false)
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String action;
 
     /** 变更详情，如 "status: SUBMITTED -> APPROVED; comment: Looks good" */
-    @Column(length = 2000, nullable = false)
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String detail;
 
-    @Column(nullable = false)
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String changedBy;
 
     @Column(nullable = false)

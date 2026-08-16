@@ -3,6 +3,9 @@
 # Boot backend, /mobile-uploads/ proxies receipt images from the Mobile
 # backend, everything else goes to the React static frontend.
 #
+# All traffic is served exclusively over HTTPS. HTTP (port 80) permanently
+# redirects to HTTPS.
+#
 # This file is a *template* (see the .template suffix and its mount path in
 # docker-compose.yml under /etc/nginx/templates/) — the official nginx image
 # runs `envsubst` over it at container startup and writes the result to
@@ -18,17 +21,36 @@ upstream web_backend {
     server web-backend:8081;
 }
 
+# Redirect HTTP to HTTPS
 server {
     listen 80;
     listen [::]:80;
     server_name _;
+    return 301 https://$host$request_uri;
+}
+
+# HTTPS server
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name _;
+
+    ssl_certificate     /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+
+    # Modern TLS configuration
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
 
     location /api/ {
         proxy_pass http://web_backend/api/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto https;
     }
 
     # Proxies receipt images from Mobile so browsers never get a direct route
@@ -37,7 +59,7 @@ server {
     # Mobile's published port through (same value used by web-backend's
     # MOBILE_API_BASE_URL, e.g. "172.19.0.1:8080" — the internal-network
     # gateway IP, not a public IP).
-    
+
     location /mobile-uploads/ {
         proxy_pass http://${MOBILE_UPSTREAM}/uploads/;
         proxy_set_header Host $host;

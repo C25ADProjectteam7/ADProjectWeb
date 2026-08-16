@@ -1,5 +1,6 @@
 package com.expensehub.webbackend.entity;
 
+import com.expensehub.webbackend.security.EncryptedStringConverter;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -20,7 +21,8 @@ public class DepartmentalBudget {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String department;
 
     @Column(name = "budget_year", nullable = false)

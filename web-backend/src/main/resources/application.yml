@@ -8,14 +8,17 @@ spring:
       ddl-auto: update
     show-sql: false
   datasource:
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:expense_hub}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:expense_hub}?useSSL=true&requireSSL=true&verifyServerCertificate=false&serverTimezone=UTC
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:changeme}
 
 server:
   port: ${SERVER_PORT:8081}
+  forward-headers-strategy: native
 
 app:
+  encryption:
+    secret: ${ENCRYPTION_SECRET}
   jwt:
     secret: ${JWT_SECRET:please-override-this-secret-in-real-environments-min-32-chars}
     expiration-ms: ${JWT_EXPIRATION_MS:3600000}
@@ -40,7 +43,7 @@ mobile:
     connect-timeout-ms: ${MOBILE_API_CONNECT_TIMEOUT_MS:3000}
     read-timeout-ms: ${MOBILE_API_READ_TIMEOUT_MS:8000}
   datasource:
-    url: ${MOBILE_DB_URL:jdbc:mysql://host.docker.internal:3307/mobile?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    url: ${MOBILE_DB_URL:jdbc:mysql://host.docker.internal:3307/mobile?useSSL=true&requireSSL=true&verifyServerCertificate=false&serverTimezone=UTC}
     username: ${MOBILE_DB_USERNAME:root}
     password: ${MOBILE_DB_PASSWORD:changeme}
 

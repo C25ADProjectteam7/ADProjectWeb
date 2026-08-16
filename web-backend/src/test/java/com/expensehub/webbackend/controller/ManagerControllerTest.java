@@ -13,6 +13,7 @@ import com.expensehub.webbackend.mobile.entity.Approval;
 import com.expensehub.webbackend.entity.ApprovalStatus;
 import com.expensehub.webbackend.entity.User;
 import com.expensehub.webbackend.repository.UserRepository;
+import com.expensehub.webbackend.security.HashUtil;
 import com.expensehub.webbackend.service.ManagerService;
 import java.util.Map;
 import java.util.Optional;
@@ -56,7 +57,7 @@ class ManagerControllerTest {
         Approval expected = Approval.builder().id(1L).status(ApprovalStatus.APPROVED).managerId(42L).build();
 
         try (MockedStatic<SecurityContextHolder> ignored = mockAuthenticatedAs("manager@test.com")) {
-            when(userRepository.findByEmail("manager@test.com")).thenReturn(Optional.of(manager));
+            when(userRepository.findByEmailHash(HashUtil.sha256Hex("manager@test.com"))).thenReturn(Optional.of(manager));
             when(managerService.decide(1L, ApprovalStatus.APPROVED, "Looks good", 42L)).thenReturn(expected);
 
             // Even if a client tried to sneak a different managerId into the body, it must be ignored.
@@ -73,7 +74,7 @@ class ManagerControllerTest {
         Approval expected = Approval.builder().id(2L).status(ApprovalStatus.REJECTED).managerId(7L).build();
 
         try (MockedStatic<SecurityContextHolder> ignored = mockAuthenticatedAs("finance@test.com")) {
-            when(userRepository.findByEmail("finance@test.com")).thenReturn(Optional.of(manager));
+            when(userRepository.findByEmailHash(HashUtil.sha256Hex("finance@test.com"))).thenReturn(Optional.of(manager));
             when(managerService.decide(2L, ApprovalStatus.REJECTED, null, 7L)).thenReturn(expected);
 
             Approval result = controller.reject(2L, Map.of());
@@ -87,7 +88,7 @@ class ManagerControllerTest {
         Approval expected = Approval.builder().id(3L).status(ApprovalStatus.APPROVED).managerId(null).build();
 
         try (MockedStatic<SecurityContextHolder> ignored = mockAuthenticatedAs("ghost@test.com")) {
-            when(userRepository.findByEmail("ghost@test.com")).thenReturn(Optional.empty());
+            when(userRepository.findByEmailHash(HashUtil.sha256Hex("ghost@test.com"))).thenReturn(Optional.empty());
             when(managerService.decide(eq(3L), eq(ApprovalStatus.APPROVED), any(), isNull())).thenReturn(expected);
 
             Approval result = controller.approve(3L, Map.of());

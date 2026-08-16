@@ -1,5 +1,7 @@
 package com.expensehub.webbackend.entity;
 
+import com.expensehub.webbackend.security.EncryptedStringConverter;
+import com.expensehub.webbackend.security.HashUtil;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,14 +23,23 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String email;
+
+    /** SHA-256 hash of lowercase email, used for indexed lookups (login etc.). */
+    @Column(name = "email_hash", unique = true, nullable = false, length = 64)
+    private String emailHash;
 
     @Column(nullable = false)
     private String passwordHash;
 
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(columnDefinition = "TEXT")
     private String fullName;
 
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(columnDefinition = "TEXT")
     private String department;
 
     @Enumerated(EnumType.STRING)
@@ -43,4 +54,16 @@ public class User {
     //Continuous login failure count, corresponding to Item 1: Account lockout strategy
     @Builder.Default
     private int failedLoginAttempts = 0;
+
+    @PrePersist
+    @PreUpdate
+    public void updateEmailHash() {
+        if (this.email != null) {
+            this.emailHash = sha256Hex(this.email.toLowerCase().trim());
+        }
+    }
+
+    public static String sha256Hex(String value) {
+        return HashUtil.sha256Hex(value);
+    }
 }

@@ -52,6 +52,7 @@ services:
       MOBILE_DB_USERNAME: ${MOBILE_DB_USERNAME:-root}
       MOBILE_DB_PASSWORD: ${MOBILE_DB_PASSWORD:-Root@2026!}
 
+      ENCRYPTION_SECRET: ${ENCRYPTION_SECRET:?set ENCRYPTION_SECRET in .env}
       SEED_DEMO_USERS: ${SEED_DEMO_USERS:-false}
     extra_hosts:
       # Resolve host.docker.internal on Linux hosts (the production server).
@@ -82,8 +83,14 @@ services:
       # image's entrypoint runs envsubst over it at startup and writes the
       # result to conf.d/default.conf — see nginx.conf.template's own comment.
       - ./gateway/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+      # TLS certificates for HTTPS termination.
+      # Generate with: openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+      #   -keyout gateway/certs/privkey.pem -out gateway/certs/fullchain.pem \
+      #   -subj "/CN=localhost"
+      - ./gateway/certs:/etc/nginx/certs:ro
     ports:
       - '80:80'
+      - '443:443'
     networks: [internal]
 
 networks:

@@ -31,7 +31,7 @@ public class AuthServiceImpl implements AuthService {
     public LoginResponse login(LoginRequest request) {
         User user =
                 userRepository
-                        .findByEmail(request.email())
+                        .findByEmailHash(User.sha256Hex(request.email().toLowerCase().trim()))
                         .orElseThrow(
                                 () -> new InvalidCredentialsException("邮箱或密码不正确"));
 

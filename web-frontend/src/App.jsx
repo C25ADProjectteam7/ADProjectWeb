@@ -9,6 +9,7 @@ import DashboardPage from './pages/DashboardPage.jsx';
 import FinanceReimbursementPage from './pages/FinanceReimbursementPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import ManagerApprovalsPage from './pages/ManagerApprovalsPage.jsx';
+import ManagerExpenseApprovalsPage from './pages/ManagerExpenseApprovalsPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 
 export default function App() {
@@ -37,6 +38,7 @@ export default function App() {
           {/* Manager / Admin */}
           <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']} />}>
             <Route path="manager/approvals" element={<ManagerApprovalsPage />} />
+            <Route path="manager/expense-approvals" element={<ManagerExpenseApprovalsPage />} />
           </Route>
 
           {/* All authenticated users */}

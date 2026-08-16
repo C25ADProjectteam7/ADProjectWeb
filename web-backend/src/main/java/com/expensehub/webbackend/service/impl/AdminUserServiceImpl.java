@@ -34,7 +34,7 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Transactional
     public User createUser(CreateUserRequest request) {
 
-        if (userRepository.findByEmail(request.email()).isPresent()) {
+        if (userRepository.findByEmailHash(User.sha256Hex(request.email().toLowerCase().trim())).isPresent()) {
             throw new IllegalArgumentException(
                     "Email is already registered");
         }
