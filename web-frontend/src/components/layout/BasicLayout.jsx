@@ -16,22 +16,22 @@ const menuItems = [
   {
     label: 'Finance',
     path: '/finance/reimbursements',
-    allowedRoles: ['ADMIN', 'FINANCE_STAFF'],
+    allowedRoles: ['FINANCE_STAFF'],
   },
   {
     label: 'Manager Approvals',
     path: '/manager/approvals',
-    allowedRoles: ['ADMIN', 'MANAGER'],
+    allowedRoles: ['MANAGER'],
   },
   {
     label: 'Expense Approvals',
     path: '/manager/expense-approvals',
-    allowedRoles: ['ADMIN', 'MANAGER'],
+    allowedRoles: ['MANAGER'],
   },
   {
     label: 'Analytics',
     path: '/analytics',
-    allowedRoles: ['ADMIN', 'FINANCE_STAFF', 'MANAGER'],
+    allowedRoles: ['FINANCE_STAFF', 'MANAGER'],
   },
 ];
 
