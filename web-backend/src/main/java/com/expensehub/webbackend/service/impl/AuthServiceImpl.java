@@ -33,19 +33,19 @@ public class AuthServiceImpl implements AuthService {
                 userRepository
                         .findByEmailHash(User.sha256Hex(request.email().toLowerCase().trim()))
                         .orElseThrow(
-                                () -> new InvalidCredentialsException("邮箱或密码不正确"));
+                                () -> new InvalidCredentialsException("email or password is incorrect"));
 
         if (!user.isEnabled()) {
-            throw new AccountLockedException("账号已被禁用，请联系管理员");
+            throw new AccountLockedException("account is disabled, please contact administrator");
         }
         if (user.getFailedLoginAttempts() >= MAX_FAILED_ATTEMPTS) {
-            throw new AccountLockedException("登录失败次数过多，账号已被锁定");
+            throw new AccountLockedException("too many failed login attempts, account is locked");
         }
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             user.setFailedLoginAttempts(user.getFailedLoginAttempts() + 1);
             userRepository.save(user);
-            throw new InvalidCredentialsException("邮箱或密码不正确");
+            throw new InvalidCredentialsException("email or password is incorrect");
         }
 
         user.setFailedLoginAttempts(0);

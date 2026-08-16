@@ -18,4 +18,8 @@ export const adminAccountsApi = {
       params: { enabled },
     });
   },
+  
+  unlockAccount(accountId) {
+    return apiClient.post(`/admin/users/${accountId}/unlock`);
+  },
 };
