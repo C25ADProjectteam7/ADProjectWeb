@@ -202,7 +202,11 @@ public class ExpenseApprovalWorkflowService {
         ExpenseApprovalWorkflow workflow = new ExpenseApprovalWorkflow();
         workflow.setExpenseId(expense.getId());
         workflow.setMobileTripId(expense.getTripId());
-        workflow.setDepartment(user != null ? user.getDepartment() : "Unknown");
+        workflow.setDepartment(
+            user != null && user.getDepartment() != null
+                ? user.getDepartment()
+                : "Unknown"
+        );
         workflow.setNeedsManagerApproval(needsManagerApproval);
         workflow.setManagerApproved(null);
         workflow.setManagerApproverId(null);
