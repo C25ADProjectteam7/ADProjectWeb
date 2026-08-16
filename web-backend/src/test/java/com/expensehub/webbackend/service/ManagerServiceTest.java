@@ -97,12 +97,42 @@ class ManagerServiceTest {
     @Test
     void sync_alreadyTracked_doesNotCreateDuplicate() {
         when(mobileExpenseClient.listAllTrips()).thenReturn(List.of(trip(1L, 10L, "500")));
+        when(mobileExpenseClient.getUser(10L)).thenReturn(user("Sales"));
         when(approvalRepository.existsByMobileTripId(1L)).thenReturn(true);
+        Approval existing = Approval.builder()
+                .id(99L)
+                .mobileTripId(1L)
+                .status(ApprovalStatus.PENDING)
+                .departmentBudgetLimit(new BigDecimal("100000"))
+                .build();
+        when(approvalRepository.findByMobileTripId(1L)).thenReturn(Optional.of(existing));
+        when(budgetLookupService.resolveBudgetLimit("Sales")).thenReturn(Optional.of(new BigDecimal("100000")));
 
         service.syncPendingApprovalsFromMobile();
 
-        verify(approvalRepository, never()).save(any());
-        verify(budgetLookupService, never()).resolveBudgetLimit(any());
+        verify(approvalRepository, never()).save(any(Approval.class));
+    }
+
+    @Test
+    void sync_alreadyTrackedPending_refreshesDepartmentBudgetLimit() {
+        when(mobileExpenseClient.listAllTrips()).thenReturn(List.of(trip(1L, 10L, "500")));
+        when(mobileExpenseClient.getUser(10L)).thenReturn(user("Sales"));
+        when(approvalRepository.existsByMobileTripId(1L)).thenReturn(true);
+
+        Approval existing = Approval.builder()
+                .id(99L)
+                .mobileTripId(1L)
+                .status(ApprovalStatus.PENDING)
+                .departmentBudgetLimit(null)
+                .build();
+        when(approvalRepository.findByMobileTripId(1L)).thenReturn(Optional.of(existing));
+        when(budgetLookupService.resolveBudgetLimit("Sales")).thenReturn(Optional.of(new BigDecimal("6000")));
+
+        service.syncPendingApprovalsFromMobile();
+
+        ArgumentCaptor<Approval> captor = ArgumentCaptor.forClass(Approval.class);
+        verify(approvalRepository, times(1)).save(captor.capture());
+        assertThat(captor.getValue().getDepartmentBudgetLimit()).isEqualByComparingTo("6000");
     }
 
     @Test

@@ -15,6 +15,13 @@ function overBudgetPercent(item) {
   return Math.round(((requested - limit) / limit) * 100);
 }
 
+function formatMoney(amount) {
+  if (amount === undefined || amount === null || amount === '') return '-';
+  const parsed = Number(amount);
+  if (Number.isNaN(parsed)) return '-';
+  return `S$${parsed.toFixed(2)}`;
+}
+
 export default function ManagerApprovalsPage() {
   const [pending, setPending] = useState([]);
   const [history, setHistory] = useState([]);
@@ -182,8 +189,8 @@ export default function ManagerApprovalsPage() {
                           </div>
                         )}
                       </td>
-                      <td className="eh-mono">S${item.budgetRequested}</td>
-                      <td className="eh-mono">S${item.departmentBudgetLimit}</td>
+                      <td className="eh-mono">{formatMoney(item.budgetRequested)}</td>
+                      <td className="eh-mono">{formatMoney(item.departmentBudgetLimit)}</td>
                       <td>
                         <span
                           className={`eh-badge ${overBudgetPercent(item) > 0 ? 'eh-badge-coral' : 'eh-badge-sage'}`}

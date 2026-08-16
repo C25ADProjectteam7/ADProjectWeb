@@ -84,6 +84,7 @@ public class ManagerService {
                                 .build();
                 approvalRepository.save(approval);
             } else {
+                Optional<BigDecimal> limit = budgetLookupService.resolveBudgetLimit(department);
                 // Sync: the employee cancelled the trip after it became
                 // pending - mark the approval decided (REJECTED with an
                 // explanatory note) so it leaves the manager's pending list.
@@ -96,6 +97,15 @@ public class ManagerService {
                             a.setDecidedAt(LocalDateTime.now());
                             approvalRepository.save(a);
                         });
+                existing.filter(a -> a.getStatus() == ApprovalStatus.PENDING
+                        && !"CANCELLED".equalsIgnoreCase(trip.getStatus()))
+                        .ifPresent(a -> {
+                            BigDecimal latestLimit = limit.orElse(null);
+                            if (!sameMoney(a.getDepartmentBudgetLimit(), latestLimit)) {
+                                a.setDepartmentBudgetLimit(latestLimit);
+                                approvalRepository.save(a);
+                            }
+                        });
             }
         }
     }
@@ -106,6 +116,16 @@ public class ManagerService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private boolean sameMoney(BigDecimal a, BigDecimal b) {
+        if (a == null && b == null) {
+            return true;
+        }
+        if (a == null || b == null) {
+            return false;
+        }
+        return a.compareTo(b) == 0;
     }
 
     @Scheduled(fixedRate = 60000)
