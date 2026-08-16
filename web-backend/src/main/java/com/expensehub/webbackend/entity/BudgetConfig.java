@@ -31,7 +31,6 @@ public class BudgetConfig {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Convert(converter = EncryptedStringConverter.class)
     @Column(nullable = false, columnDefinition = "TEXT")
     private String department;
 
@@ -45,7 +44,6 @@ public class BudgetConfig {
     @Column(nullable = false, precision = 14, scale = 2)
     private BigDecimal amount;
 
-    @Convert(converter = EncryptedStringConverter.class)
     @Column(columnDefinition = "TEXT")
     private String updatedBy;
 
