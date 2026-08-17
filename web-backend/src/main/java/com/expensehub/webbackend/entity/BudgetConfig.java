@@ -44,6 +44,7 @@ public class BudgetConfig {
     @Column(nullable = false, precision = 14, scale = 2)
     private BigDecimal amount;
 
+    @Convert(converter = EncryptedStringConverter.class)
     @Column(columnDefinition = "TEXT")
     private String updatedBy;
 
