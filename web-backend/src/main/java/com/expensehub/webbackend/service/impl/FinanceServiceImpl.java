@@ -301,12 +301,15 @@ public class FinanceServiceImpl implements FinanceService {
         List<MobileExpenseDTO> raw = mobileExpenseClient.listAllExpenses();
         Map<Long, MobileUserDTO> userCache = new HashMap<>();
         List<ResolvedExpense> resolved = new ArrayList<>(raw.size());
+        Map<Long, MobileUserDTO> userByExpenseId = new HashMap<>(raw.size());
+
+        // Pass 1: resolve the employee (and therefore department) behind every
+        // expense. No workflow writes here — the over-budget decision depends on
+        // the department's TOTAL spend for the period, which isn't known until
+        // every expense has been resolved.
         for (MobileExpenseDTO e : raw) {
             MobileUserDTO user = resolveUser(userCache, e.getUserId());
-            if (user != null) {
-                workflowService.updateWorkflowForExpense(e.getId(), e, user);
-            }
-            workflowService.updateWorkflowForExpense(e.getId(), e, user);
+            userByExpenseId.put(e.getId(), user);
             resolved.add(
                     new ResolvedExpense(
                             e.getId(),
@@ -324,7 +327,76 @@ public class FinanceServiceImpl implements FinanceService {
                             e.getApprovalOpinion(),
                             e.getApproverName()));
         }
+
+        refreshWorkflowState(raw, resolved, userByExpenseId);
         return resolved;
+    }
+
+    /**
+     * Pass 2: bring each expense's manager-approval workflow row up to date.
+     * <p>
+     * Split out so the write can be moved off the read path (e.g. onto a
+     * scheduled reconciliation job) without touching the resolution logic above.
+     */
+    private void refreshWorkflowState(
+            List<MobileExpenseDTO> raw,
+            List<ResolvedExpense> resolved,
+            Map<Long, MobileUserDTO> userByExpenseId) {
+        for (MobileExpenseDTO e : raw) {
+            MobileUserDTO user = userByExpenseId.get(e.getId());
+            if (user != null) {
+                workflowService.updateWorkflowForExpense(
+                        e.getId(), e, user, departmentPeriodSpend(resolved, user, e));
+            }
+        }
+    }
+
+    /**
+     * Total non-rejected spend for this expense's department over the budget
+     * period the expense falls in — the same figure {@link #computeFlags} feeds
+     * the policy engine, so the manager-routing decision and the OVER_BUDGET
+     * flag shown to finance are computed from identical inputs.
+     *
+     * @return null when there is no department or no configured budget, meaning
+     *     "no limit to compare against" rather than a limit of zero.
+     */
+    private BigDecimal departmentPeriodSpend(
+            List<ResolvedExpense> all, MobileUserDTO user, MobileExpenseDTO expense) {
+        String department = user != null ? user.getDepartment() : null;
+        if (department == null) {
+            return null;
+        }
+        LocalDate anchor =
+                expense.getSubmittedAt() != null
+                        ? expense.getSubmittedAt().toLocalDate()
+                        : LocalDate.now();
+        Optional<BudgetConfig> budget = resolveBudgetFor(department, anchor);
+        if (budget.isEmpty()) {
+            return null;
+        }
+        BudgetConfig cfg = budget.get();
+        LocalDate from = BudgetPeriodResolver.periodStart(cfg.getPeriodType(), anchor);
+        LocalDate to = BudgetPeriodResolver.periodEnd(cfg.getPeriodType(), anchor);
+        return sumActiveAmount(all, department, from, to);
+    }
+
+    /**
+     * Budget lookup for a department at a point in time: quarterly first, then
+     * annual. Shared by the flag computation and the workflow refresh so the two
+     * can never resolve different budgets for the same expense.
+     */
+    private Optional<BudgetConfig> resolveBudgetFor(String department, LocalDate anchor) {
+        return budgetConfigRepository
+                .findByDepartmentAndPeriodTypeAndPeriodLabel(
+                        department,
+                        BudgetPeriodType.QUARTERLY,
+                        BudgetPeriodResolver.quarterlyLabel(anchor))
+                .or(
+                        () ->
+                                budgetConfigRepository.findByDepartmentAndPeriodTypeAndPeriodLabel(
+                                        department,
+                                        BudgetPeriodType.ANNUAL,
+                                        BudgetPeriodResolver.annualLabel(anchor)));
     }
 
     private MobileUserDTO resolveUser(Map<Long, MobileUserDTO> cache, Long userId) {
@@ -373,17 +445,8 @@ public class FinanceServiceImpl implements FinanceService {
 
         LocalDate anchor =
                 target.submittedAt() != null ? target.submittedAt().toLocalDate() : LocalDate.now();
-        String quarterLabel = BudgetPeriodResolver.quarterlyLabel(anchor);
-        String annualLabel = BudgetPeriodResolver.annualLabel(anchor);
 
-        Optional<BudgetConfig> budget =
-                budgetConfigRepository
-                        .findByDepartmentAndPeriodTypeAndPeriodLabel(
-                                target.department(), BudgetPeriodType.QUARTERLY, quarterLabel)
-                        .or(
-                                () ->
-                                        budgetConfigRepository.findByDepartmentAndPeriodTypeAndPeriodLabel(
-                                                target.department(), BudgetPeriodType.ANNUAL, annualLabel));
+        Optional<BudgetConfig> budget = resolveBudgetFor(target.department(), anchor);
 
         BigDecimal periodSpent = target.amount();
         if (budget.isPresent()) {

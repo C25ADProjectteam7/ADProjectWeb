@@ -2,10 +2,13 @@ package com.expensehub.webbackend.service;
 
 import com.expensehub.webbackend.entity.ExpenseApprovalWorkflow;
 import com.expensehub.webbackend.entity.ReimbursementAuditLog;
+import com.expensehub.webbackend.integration.mobile.MobileApiException;
 import com.expensehub.webbackend.integration.mobile.MobileExpenseClient;
 import com.expensehub.webbackend.repository.ExpenseApprovalWorkflowRepository;
 import com.expensehub.webbackend.repository.ReimbursementAuditLogRepository;
 import java.time.Instant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 public class ManagerExpenseService {
+
+    private static final Logger log = LoggerFactory.getLogger(ManagerExpenseService.class);
 
     private final ExpenseApprovalWorkflowService workflowService;
     private final ExpenseApprovalWorkflowRepository workflowRepository;
@@ -79,12 +84,23 @@ public class ManagerExpenseService {
      * Updates Mobile backend to REJECTED status and clears workflow.
      */
     public void rejectExpense(Long expenseId, Long managerId, String note) {
-        // Update Mobile backend via API to reject the expense
+        // Mobile is the system of record for expense status, so it has to be
+        // updated first. If this call fails we must NOT clear the workflow:
+        // Mobile would still show the expense as pending while Web has dropped
+        // it from both the manager queue and the finance queue, and nobody
+        // would ever see it again. Propagating the failure keeps the row in the
+        // manager's pending list so the rejection can be retried.
+        // MobileApiException is mapped to 4xx/502 by GlobalExceptionHandler,
+        // and @Transactional rolls the audit entry back with it.
         try {
             mobileExpenseClient.reject(expenseId, note);
-        } catch (Exception e) {
-            // Log error but continue with workflow update
-            // The expense might already be rejected or not found
+        } catch (MobileApiException e) {
+            log.error(
+                "Mobile rejected the reject call for expenseId={} (manager {}): {}",
+                expenseId,
+                managerId,
+                e.getMessage());
+            throw e;
         }
 
         // Clear workflow since expense is rejected
@@ -124,7 +140,7 @@ public class ManagerExpenseService {
      * Log audit entry for manager action on expense reimbursement.
      */
     private void logAudit(Long expenseId, String action, Long managerId, String note) {
-        ReimbursementAuditLog log = ReimbursementAuditLog.builder()
+        ReimbursementAuditLog entry = ReimbursementAuditLog.builder()
             .requestId(expenseId)
             .action(action)
             .detail("managerId=" + managerId
@@ -132,6 +148,6 @@ public class ManagerExpenseService {
             .changedBy("manager#" + managerId)
             .changedAt(Instant.now())
             .build();
-        auditLogRepository.save(log);
+        auditLogRepository.save(entry);
     }
 }

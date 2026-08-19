@@ -40,8 +40,18 @@ public class ExpenseApprovalWorkflow {
     @Column(name = "mobile_trip_id")
     private Long mobileTripId;
 
-    @Convert(converter = EncryptedStringConverter.class)
-    @Column(name = "department", nullable = false, columnDefinition = "TEXT")
+    /**
+     * NOT encrypted, deliberately. This column is queried by equality
+     * (findByDepartmentAndNeedsManagerApprovalAndManagerApprovedIsNull) and
+     * carries an index. AES-GCM uses a random IV per write, so the same
+     * department name produces a different ciphertext on every row — an
+     * equality predicate can never match, and an index over ciphertext is
+     * dead weight. Same reasoning as BudgetConfig.department (see commit
+     * 9e19033). A department name is org-structure metadata, not personal
+     * data; manager_note below is the field on this entity that actually
+     * needs encrypting, and it is never queried.
+     */
+    @Column(name = "department", nullable = false, length = 128)
     private String department;
 
     @Column(name = "needs_manager_approval", nullable = false)
@@ -93,6 +103,7 @@ public class ExpenseApprovalWorkflow {
      * 2. It has been approved by a manager
      */
     public void computeReadyForFinance() {
-        this.readyForFinance = !needsManagerApproval || Boolean.TRUE.equals(managerApproved);
+        this.readyForFinance =
+                !Boolean.TRUE.equals(needsManagerApproval) || Boolean.TRUE.equals(managerApproved);
     }
 }

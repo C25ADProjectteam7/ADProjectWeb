@@ -3,6 +3,8 @@ package com.expensehub.webbackend.config;
 import com.expensehub.webbackend.entity.Role;
 import com.expensehub.webbackend.entity.User;
 import com.expensehub.webbackend.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,6 +17,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @Configuration
 @Profile("dev")
 public class UserDataSeeder {
+
+    private static final Logger log = LoggerFactory.getLogger(UserDataSeeder.class);
 
     @Bean
     CommandLineRunner seedUsers(UserRepository userRepository, PasswordEncoder passwordEncoder) {
@@ -53,10 +57,11 @@ public class UserDataSeeder {
                     .failedLoginAttempts(0)
                     .build());
 
-            System.out.println("Test users created (see TEST_ACCOUNTS.md):");
-            System.out.println("   ADMIN: admin@test.com / Admin123!");
-            System.out.println("   FINANCE_STAFF: finance@test.com / Finance123!");
-            System.out.println("   MANAGER: manager@test.com / Manager@123");
+            // Emails only — printing the passwords put them in stdout, which
+            // means `docker compose logs` and any log shipper downstream.
+            // The passwords are in TEST_ACCOUNTS.md for whoever needs them.
+            log.info("Seeded dev test users (passwords in TEST_ACCOUNTS.md): {}, {}, {}",
+                    "admin@test.com", "finance@test.com", "manager@test.com");
         };
     }
 }

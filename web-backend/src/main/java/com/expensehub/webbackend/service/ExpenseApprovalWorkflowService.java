@@ -40,30 +40,40 @@ public class ExpenseApprovalWorkflowService {
 
     /**
      * Initialize workflow state for a new expense.
+     *
+     * @param departmentPeriodSpend total non-rejected spend for this expense's
+     *     department over the budget period the expense falls in, INCLUDING this
+     *     expense. Callers compute it from the full expense list (see
+     *     FinanceServiceImpl.departmentPeriodSpend). Pass {@code null} only when
+     *     the full list is genuinely unavailable — the expense's own amount is
+     *     then used, which under-reports and can miss an over-budget condition.
      */
     public ExpenseApprovalWorkflow initializeWorkflowForExpense(
         MobileExpenseDTO expense,
-        MobileUserDTO user
+        MobileUserDTO user,
+        BigDecimal departmentPeriodSpend
     ) {
-        // Calculate if needs manager approval
-        boolean needsManagerApproval = calculateNeedsManagerApproval(expense, user);
+        BudgetEvaluation evaluation = evaluate(expense, user, departmentPeriodSpend);
 
-        // Calculate over-budget amount for informational purposes
-        BigDecimal overBudgetAmount = calculateOverBudgetAmount(expense, user);
-
-        return createNewWorkflow(expense, user, needsManagerApproval, overBudgetAmount);
+        return createNewWorkflow(
+            expense, user, evaluation.needsManagerApproval(), evaluation.overBudgetAmount());
     }
 
     /**
      * Update existing workflow (e.g., when budgets change).
+     *
+     * @param departmentPeriodSpend see
+     *     {@link #initializeWorkflowForExpense(MobileExpenseDTO, MobileUserDTO, BigDecimal)}.
      */
     public ExpenseApprovalWorkflow updateWorkflowForExpense(
         Long expenseId,
         MobileExpenseDTO expense,
-        MobileUserDTO user
+        MobileUserDTO user,
+        BigDecimal departmentPeriodSpend
     ) {
-        boolean needsManagerApproval = calculateNeedsManagerApproval(expense, user);
-        BigDecimal overBudgetAmount = calculateOverBudgetAmount(expense, user);
+        BudgetEvaluation evaluation = evaluate(expense, user, departmentPeriodSpend);
+        boolean needsManagerApproval = evaluation.needsManagerApproval();
+        BigDecimal overBudgetAmount = evaluation.overBudgetAmount();
 
         return workflowRepository.findByExpenseId(expenseId)
             .map(existing -> updateExistingWorkflow(existing, needsManagerApproval, overBudgetAmount))
@@ -71,71 +81,36 @@ public class ExpenseApprovalWorkflowService {
     }
 
     /**
-     * Calculate whether an expense needs manager approval based on OVER_BUDGET flag.
+     * Single evaluation pass shared by initialize and update.
+     * <p>
+     * Both outputs are derived from the SAME (budget, periodSpent) pair, so
+     * "does this need manager approval" and "by how much is it over" can no
+     * longer disagree — and because the OVER_BUDGET decision is delegated to
+     * {@link ReimbursementPolicyEngine}, it is also the same rule the finance
+     * screen shows as a policy flag. Previously this class compared a single
+     * expense against the whole budget while FinanceServiceImpl summed the
+     * period, so an expense could be flagged OVER_BUDGET for finance yet never
+     * routed to a manager.
      */
-    private boolean calculateNeedsManagerApproval(
+    private BudgetEvaluation evaluate(
         MobileExpenseDTO expense,
-        MobileUserDTO user
-    ) {
-        List<String> flags = calculateFlags(expense, user);
-        return flags.contains(ReimbursementPolicyEngine.FLAG_OVER_BUDGET);
-    }
-
-    /**
-     * Calculate the over-budget amount (positive if over budget, null or zero if not).
-     */
-    private BigDecimal calculateOverBudgetAmount(
-        MobileExpenseDTO expense,
-        MobileUserDTO user
-    ) {
-        String department = user != null ? user.getDepartment() : null;
-        if (department == null) {
-            return null;
-        }
-
-        LocalDate anchor = expense.getSubmittedAt() != null
-            ? expense.getSubmittedAt().toLocalDate()
-            : LocalDate.now();
-
-        // Look up budget for department and period
-        Optional<BudgetConfig> budget = findBudgetForDepartmentAndDate(department, anchor);
-
-        if (budget.isPresent()) {
-            BudgetConfig cfg = budget.get();
-            // For simplicity, we'll just check if this expense alone exceeds budget
-            // In a real implementation, we'd need to sum all expenses in the period
-            BigDecimal budgetAmount = cfg.getAmount();
-            BigDecimal expenseAmount = expense.getAmount();
-
-            // This is a simplified check - actual implementation would need
-            // to sum all expenses for the department in the period
-            if (expenseAmount.compareTo(budgetAmount) > 0) {
-                return expenseAmount.subtract(budgetAmount);
-            }
-        }
-
-        return null; // Not over budget
-    }
-
-    /**
-     * Calculate flags for an expense.
-     */
-    private List<String> calculateFlags(
-        MobileExpenseDTO expense,
-        MobileUserDTO user
+        MobileUserDTO user,
+        BigDecimal departmentPeriodSpend
     ) {
         String department = user != null ? user.getDepartment() : null;
 
-        // If no department, evaluate without budget check
+        // No department means no budget to compare against. The policy engine
+        // can only raise OVER_BUDGET when a budget is present, so there is
+        // nothing to evaluate here — this expense is never routed to a manager.
+        // (MISSING_RECEIPT and OVER_PER_DIEM still surface to finance via
+        // FinanceServiceImpl.computeFlags; they don't gate manager approval.)
         if (department == null) {
-            return policyEngine.evaluate(
-                expense.getAmount(),
-                ReimbursementCategory.valueOf(expense.getCategory()),
-                expense.getReceiptUrl() != null && !expense.getReceiptUrl().isBlank(),
-                Optional.empty(),
-                expense.getAmount()
-            );
+            return new BudgetEvaluation(false, null);
         }
+
+        boolean receiptAttached =
+            expense.getReceiptUrl() != null && !expense.getReceiptUrl().isBlank();
+        ReimbursementCategory category = ReimbursementCategory.valueOf(expense.getCategory());
 
         LocalDate anchor = expense.getSubmittedAt() != null
             ? expense.getSubmittedAt().toLocalDate()
@@ -143,18 +118,40 @@ public class ExpenseApprovalWorkflowService {
 
         Optional<BudgetConfig> budget = findBudgetForDepartmentAndDate(department, anchor);
 
-        // Simplified: use expense amount as period spent for flag calculation
-        // Actual implementation would need to sum expenses in period
-        BigDecimal periodSpent = expense.getAmount();
+        // Fall back to the expense's own amount only if the caller could not
+        // supply the period total. That under-reports spend, so it can miss an
+        // over-budget condition, but it never invents one.
+        BigDecimal periodSpent =
+            departmentPeriodSpend != null ? departmentPeriodSpend : expense.getAmount();
 
-        return policyEngine.evaluate(
-            expense.getAmount(),
-            ReimbursementCategory.valueOf(expense.getCategory()),
-            expense.getReceiptUrl() != null && !expense.getReceiptUrl().isBlank(),
-            budget,
-            periodSpent
-        );
+        List<String> flags =
+            policyEngine.evaluate(
+                expense.getAmount(), category, receiptAttached, budget, periodSpent);
+
+        boolean overBudget = flags.contains(ReimbursementPolicyEngine.FLAG_OVER_BUDGET);
+        if (!overBudget) {
+            return new BudgetEvaluation(false, null);
+        }
+
+        // How much of THIS expense falls beyond the budget line — not how far
+        // the department as a whole is over.
+        //
+        // periodSpent - budget is the department's cumulative overshoot. Using
+        // it directly means that once a department is over, every subsequent
+        // expense row shows the same (and growing) figure, so two S$300 claims
+        // can both read "over by S$200" when the department is only S$200 over
+        // in total. Capping at the expense's own amount gives the manager the
+        // number they're actually deciding on:
+        //   - department was still under: overshoot = thisAmount - remaining
+        //   - department already over:    the whole expense is beyond the line
+        BigDecimal cumulativeOvershoot = periodSpent.subtract(budget.orElseThrow().getAmount());
+        BigDecimal overBudgetAmount = cumulativeOvershoot.min(expense.getAmount());
+
+        return new BudgetEvaluation(true, overBudgetAmount);
     }
+
+    /** Result of one budget evaluation: whether a manager is needed, and by how much. */
+    private record BudgetEvaluation(boolean needsManagerApproval, BigDecimal overBudgetAmount) {}
 
     /**
      * Find budget for a department and date (quarterly first, then annual).
@@ -174,23 +171,38 @@ public class ExpenseApprovalWorkflowService {
         boolean needsManagerApproval,
         BigDecimal overBudgetAmount
     ) {
-        // Only update if needsManagerApproval changed
-        if (existing.getNeedsManagerApproval() != needsManagerApproval) {
+        boolean changed = false;
+
+        if (!Boolean.valueOf(needsManagerApproval).equals(existing.getNeedsManagerApproval())) {
             existing.setNeedsManagerApproval(needsManagerApproval);
-            existing.setOverBudgetAmount(overBudgetAmount);
-
-            // If needs manager approval changed to false, ensure ready for finance
-            existing.computeReadyForFinance();
-            return workflowRepository.save(existing);
+            changed = true;
         }
 
-        // Update over-budget amount if provided
-        if (overBudgetAmount != null && !overBudgetAmount.equals(existing.getOverBudgetAmount())) {
+        // Also handles the null transition (was over budget, now isn't), which
+        // the previous `overBudgetAmount != null` guard silently skipped and
+        // left a stale figure on the row.
+        if (!sameAmount(overBudgetAmount, existing.getOverBudgetAmount())) {
             existing.setOverBudgetAmount(overBudgetAmount);
-            return workflowRepository.save(existing);
+            changed = true;
         }
 
-        return existing;
+        if (!changed) {
+            return existing;
+        }
+
+        existing.computeReadyForFinance();
+        return workflowRepository.save(existing);
+    }
+
+    /**
+     * BigDecimal.equals() is scale-sensitive — 10.0 and 10.00 compare unequal
+     * and would trigger a write on every read. compareTo() is the correct test.
+     */
+    private static boolean sameAmount(BigDecimal a, BigDecimal b) {
+        if (a == null || b == null) {
+            return a == b;
+        }
+        return a.compareTo(b) == 0;
     }
 
     private ExpenseApprovalWorkflow createNewWorkflow(

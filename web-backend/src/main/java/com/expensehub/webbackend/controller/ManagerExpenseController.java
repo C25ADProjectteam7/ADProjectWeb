@@ -4,6 +4,7 @@ import com.expensehub.webbackend.entity.ExpenseApprovalWorkflow;
 import com.expensehub.webbackend.entity.User;
 import com.expensehub.webbackend.repository.UserRepository;
 import com.expensehub.webbackend.service.ManagerExpenseService;
+import java.util.HashMap;
 import java.util.Map;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -104,10 +105,15 @@ public class ManagerExpenseController {
     @GetMapping("/{expenseId}/decision")
     public ResponseEntity<Map<String, Object>> getDecision(@PathVariable Long expenseId) {
         Boolean decision = managerExpenseService.getManagerDecision(expenseId);
-        Map<String, Object> response = Map.of(
-            "hasDecision", decision != null,
-            "decision", decision
-        );
+
+        // "No decision yet" is the normal case for anything sitting in the
+        // pending queue, and it is exactly the case Map.of() rejects — it throws
+        // NullPointerException on a null value. HashMap keeps the null so the
+        // client can distinguish "not decided" from "rejected".
+        Map<String, Object> response = new HashMap<>();
+        response.put("hasDecision", decision != null);
+        response.put("decision", decision);
+
         return ResponseEntity.ok(response);
     }
 

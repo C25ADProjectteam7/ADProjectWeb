@@ -2,7 +2,9 @@ package com.expensehub.webbackend.config;
 
 import com.expensehub.webbackend.security.JwtAuthenticationFilter;
 import com.expensehub.webbackend.security.JwtUtil;
+import java.util.Arrays;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -52,13 +54,35 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * Allowed browser origins, from {@code app.cors.allowed-origins} (comma
+     * separated). Defaults to the Vite dev server only.
+     * <p>
+     * This used to be {@code "*"} together with allowCredentials(true), which
+     * lets ANY site a logged-in admin visits call this API. The JWT lives in
+     * localStorage rather than a cookie so the classic CSRF path doesn't apply,
+     * but a malicious page could still read responses cross-origin, and CSRF is
+     * disabled on this filter chain. In production this is set to the gateway's
+     * own origin; because the gateway serves the SPA and the API on the same
+     * origin, normal traffic isn't cross-origin at all.
+     */
+    @Value("${app.cors.allowed-origins:http://localhost:5173}")
+    private String allowedOrigins;
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("*"));
+        config.setAllowedOrigins(
+                Arrays.stream(allowedOrigins.split(","))
+                        .map(String::trim)
+                        .filter(origin -> !origin.isEmpty())
+                        .toList());
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
+        config.setAllowedHeaders(
+                List.of("Authorization", "Content-Type", "Accept", "X-Requested-With"));
+        config.setExposedHeaders(List.of("Content-Disposition")); // Excel export filename
         config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

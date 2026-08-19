@@ -19,19 +19,17 @@ server:
 app:
   encryption:
     secret: ${ENCRYPTION_SECRET}
+  cors:
+    # Comma-separated browser origins allowed to call this API. In production
+    # set CORS_ALLOWED_ORIGINS to the gateway's own origin (e.g.
+    # https://your-droplet-host); the default below is the Vite dev server.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
   jwt:
     secret: ${JWT_SECRET:please-override-this-secret-in-real-environments-min-32-chars}
     expiration-ms: ${JWT_EXPIRATION_MS:3600000}
   mobile:
     base-url: ${MOBILE_API_BASE_URL:http://host.docker.internal:8080}
-
-    app:
-      jwt:
-        secret: ${JWT_SECRET:please-override-this-secret-in-real-environments-min-32-chars}
-        expiration-ms: ${JWT_EXPIRATION_MS:3600000}
-      mobile:
-        base-url: ${MOBILE_API_BASE_URL:http://host.docker.internal:8080}
-        service-token: ${MOBILE_SERVICE_TOKEN:not-configured}
+    service-token: ${MOBILE_SERVICE_TOKEN:not-configured}
 
 # Shared-SQL data source: the Manager approval workflow reads/writes the
 # approvals table directly in Mobile's MySQL instance (see
