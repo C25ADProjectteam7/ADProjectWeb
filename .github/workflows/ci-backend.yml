@@ -220,3 +220,101 @@ jobs:
             git pull --ff-only origin main
             docker compose up -d --build web-backend
             docker compose ps
+
+  # ============================================================
+  # Stage 5: DAST — Dynamic Application Security Testing (OWASP ZAP)
+  # Spins up the backend + a throwaway MySQL in the runner, waits for
+  # the app to be healthy, then runs a ZAP baseline scan against the
+  # live API. Unlike SAST/SCA (which read code/deps), this probes the
+  # RUNNING app from the outside — catching missing security headers,
+  # cookie flags, and misconfigurations only visible at runtime.
+  #
+  # Runs after deploy and is non-blocking: a baseline scan surfaces
+  # warnings for review, it does not gate the pipeline.
+  # ============================================================
+  dast:
+    name: DAST (OWASP ZAP Baseline)
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    # Throwaway MySQL for the app to boot against — never touches prod.
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: expense_hub_web
+          MYSQL_ROOT_PASSWORD: dast_root_pw
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -pdast_root_pw"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Reuse the same Dockerfile the pipeline ships. Build locally (load),
+      # so the scanned artifact is byte-identical to what gets deployed.
+      - name: Build backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: web-backend
+          push: false
+          load: true
+          tags: expense-hub-backend:dast
+          cache-from: type=gha
+
+      - name: Start backend container
+        run: |
+          docker run -d --name backend-dast \
+            --add-host=host.docker.internal:host-gateway \
+            -p 8081:8081 \
+            -e SPRING_PROFILES_ACTIVE=prod \
+            -e DB_HOST=host.docker.internal \
+            -e DB_PORT=3306 \
+            -e DB_NAME=expense_hub_web \
+            -e DB_USERNAME=root \
+            -e DB_PASSWORD=dast_root_pw \
+            -e ENCRYPTION_SECRET="$(openssl rand -base64 32)" \
+            -e JWT_SECRET="$(openssl rand -base64 32)" \
+            -e MOBILE_API_BASE_URL=http://127.0.0.1:9 \
+            -e MOBILE_DB_URL="jdbc:mysql://host.docker.internal:3306/expense_hub_web?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC" \
+            -e MOBILE_DB_USERNAME=root \
+            -e MOBILE_DB_PASSWORD=dast_root_pw \
+            expense-hub-backend:dast
+
+      # Give Spring Boot time to connect to MySQL, run ddl-auto, and open the port.
+      - name: Wait for /api/health
+        run: |
+          for i in $(seq 1 40); do
+            if curl -fsS http://localhost:8081/api/health >/dev/null 2>&1; then
+              echo "Backend is healthy"; exit 0
+            fi
+            echo "waiting for backend... ($i/40)"; sleep 5
+          done
+          echo "Backend failed to become healthy — dumping logs:"
+          docker logs backend-dast
+          exit 1
+
+      - name: OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: 'http://localhost:8081/api'
+          # -I => do not fail the job on warnings (baseline finds many by design).
+          # Report artifacts are still produced and uploaded below.
+          cmd_options: '-I'
+          fail_action: false
+
+      - name: Show backend logs (always)
+        if: always()
+        run: docker logs backend-dast || true
+
+      - name: Stop backend container
+        if: always()
+        run: docker rm -f backend-dast || true

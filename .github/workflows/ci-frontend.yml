@@ -217,3 +217,69 @@ jobs:
             git pull --ff-only origin main
             docker compose up -d --build web-frontend
             docker compose ps
+
+  # ============================================================
+  # Stage 5: DAST — Dynamic Application Security Testing (OWASP ZAP)
+  # The frontend image is a static React site served by nginx. We build
+  # it, run it in the runner, wait for it to serve, then run a ZAP
+  # baseline scan against the live site. This catches runtime-only issues
+  # a static site still has: missing security headers (CSP, X-Frame-
+  # Options, X-Content-Type-Options), cookie flags, and info disclosure.
+  #
+  # Runs after deploy and is non-blocking: baseline findings are for
+  # review, they do not gate the pipeline.
+  # ============================================================
+  dast:
+    name: DAST (OWASP ZAP Baseline)
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build the same image the pipeline ships, so the scanned site is
+      # byte-identical to production.
+      - name: Build frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: web-frontend
+          push: false
+          load: true
+          tags: expense-hub-web:dast
+          cache-from: type=gha
+
+      - name: Start frontend container
+        run: |
+          docker run -d --name frontend-dast -p 8080:80 expense-hub-web:dast
+
+      - name: Wait for site to serve
+        run: |
+          for i in $(seq 1 24); do
+            if curl -fsS http://localhost:8080/ >/dev/null 2>&1; then
+              echo "Frontend is serving"; exit 0
+            fi
+            echo "waiting for frontend... ($i/24)"; sleep 5
+          done
+          echo "Frontend failed to serve — dumping logs:"
+          docker logs frontend-dast
+          exit 1
+
+      - name: OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: 'http://localhost:8080/'
+          # -I => report warnings without failing the job (baseline finds many
+          # by design). Reports are still produced and uploaded.
+          cmd_options: '-I'
+          fail_action: false
+
+      - name: Show frontend logs (always)
+        if: always()
+        run: docker logs frontend-dast || true
+
+      - name: Stop frontend container
+        if: always()
+        run: docker rm -f frontend-dast || true
