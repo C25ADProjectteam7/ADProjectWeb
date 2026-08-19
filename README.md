@@ -1,244 +1,473 @@
 # Smart Travel and Expense Hub — Web (Frontend + Backend)
 
-Smart Travel & Expense Hub的Web端服务，前后端都在其中：
+The web administration console for Smart Travel & Expense Hub, serving three roles:
+Admin, Finance Staff, and Manager. Both tiers live in this repository:
 
 ```
-web-frontend/   React + Vite 前端
-web-backend/    Spring Boot 后端
-gateway/        统一对外访问的 Nginx 网关配置
-docker-compose.yml   本地/服务器整体编排（MySQL + 后端 + 前端 + 网关）
+web-frontend/   React + Vite frontend
+web-backend/    Spring Boot backend
+gateway/        Nginx gateway config — the single public entry point (TLS termination)
+docker-compose.yml   Full-stack orchestration (MySQL + backend + frontend + gateway)
 .github/workflows/
-  ci-frontend.yml   前端 CI/CD
-  ci-backend.yml    后端 CI/CD
+  ci-frontend.yml   Frontend CI/CD (5 stages: build, secret scan, SAST, SCA, image scan, DAST)
+  ci-backend.yml    Backend CI/CD (same shape)
 ```
 
-### 项目状态概览（截至 2026-08-16）
+> The web tier is not a standalone system. Trip requests and expense claims are
+> created by employees on the **mobile team's backend**; this repository reads and
+> writes that data over two separate channels (see "Integration with the mobile
+> backend"). Without the mobile service running, the reimbursement, approval, and
+> analytics modules have no business data to work with.
 
-- 全栈基础设施整合已完成：React 前端 + Spring Boot 后端 + MySQL + Nginx API Gateway + Docker Compose 编排。
-- GitHub Actions 的前后端 CI/CD 流水线已上线，并能在 `main` 分支上自动执行构建、测试、安全扫描和部署。
-- 云端部署已验证可用：已在 DigitalOcean Ubuntu Droplet 上完成部署验证，应用栈可正常运行。
-- 业务功能层面仍处于迭代中：截至当前，尚无单个业务功能达到“集成测试通过 / 已部署到云端”的正式交付状态；当前仓库主要体现的是基础骨架和全栈集成基础设施。
+---
 
-### Project Status Report
-
-| ID | Features | Implementation Technologies | Requirements | Development | Integration Testing | Deployed to Cloud |
-|---|---|---|---|---|---|---|
-| 1 | Secure Account Login | Spring Boot, Spring Security, JWT, RBAC, MySQL, React.js (login form) | I | I |  |  |
-| 2 | Admin Account Management (create/edit/disable) | React.js, Spring Boot, MySQL | I | I |  |  |
-| 3 | Forgotten Password Reset via Email | Spring Boot, Email service (SMTP/SES), JWT reset token |  |  |  |  |
-| 15 | Budget vs. Actual Spending Dashboard | React.js, Chart.js, Spring Boot REST API | I |  |  |  |
-| 16 | Department Budget Configuration | React.js, Spring Boot, MySQL | I |  |  |  |
-| 17 | Reimbursement Review with Policy Flags | React.js, Spring Boot, rule engine | I |  |  |  |
-| 18 | Export Expense Data to Excel | React.js, Apache POI | I |  |  |  |
-| 19 | Edit/Correct Submitted Claims | React.js, Spring Boot REST API | I |  |  |  |
-| 20 | Manager Approval Notifications | Spring Boot, Email/Push (SES/FCM), React.js, MySQL | I |  |  |  |
-| 23 | Departmental Expense Comparison Chart | React.js, Chart.js | I |  |  |  |
-| 24 | Employee Travel Frequency Statistics | React.js, Chart.js | I |  |  |  |
-| 25 | Budget Overspending Alert Dashboard | React.js, Chart.js, anomaly detection rules | I |  |  |  |
-| 26 | Data Encryption at Rest and in Transit | AES-256, TLS 1.2+/HTTPS, Spring Boot field-level encryption |  |  |  |  |
-| 27 | RBAC and Sensitive-Data Access Audit Log | Spring Security RBAC, audit log table, MySQL | C | I |  |  |
-| 28 | CI/CD Pipeline with Security Scanning | GitHub Actions, Docker, SonarQube / Snyk | C | C | C | C |
-| 29 | Unified Cloud Gateway Infrastructure | DigitalOcean Ubuntu Droplet (backlog spec: AWS EC2/RDS), Docker Compose, Nginx (API Gateway) | C | C | C | C |
-
-说明：`C = Completed`，`I = In Progress`。当前项目已完成基础设施层和部署层的集成与上线；后续业务功能项仍需继续按需求、设计、开发和集成测试节奏推进。
-
-### 整体架构
+## 1. Architecture
 
 ```
-                        ┌─────────────┐
-   外部请求  ───────▶   │   gateway    │  (Nginx, 对外唯一入口, :80)
-                        └──────┬──────┘
-                    /api/*     │      其余路径
-                 ┌─────────────┴─────────────┐
-                 ▼                           ▼
-         ┌───────────────┐           ┌───────────────┐
-         │  web-backend  │           │  web-frontend │
-         │ Spring Boot   │           │ React 静态资源 │
-         │   :8081       │           │  (自带nginx:80)│
-         └───────┬───────┘           └───────────────┘
-                 │
-                 ▼
-         ┌───────────────┐
-         │     mysql     │
-         └───────────────┘
+                          ┌──────────────────┐
+        external      ──▶ │     gateway      │  Nginx, sole public entry point
+        traffic (HTTPS)   │  :80 → 301 :443  │  TLS 1.2/1.3 termination
+                          └────────┬─────────┘
+              /api/*   ┌───────────┼────────────┐  /mobile-uploads/*
+                       │           │ everything │
+                       ▼           ▼   else     ▼
+              ┌────────────────┐ ┌──────────────────┐ ┌──────────────┐
+              │  web-backend   │ │   web-frontend   │ │ mobile tier  │
+              │ Spring Boot 4  │ │  React static    │ │ receipt      │
+              │    :8081       │ │  assets (nginx)  │ │ images       │
+              └───┬────────┬───┘ └──────────────────┘ └──────────────┘
+                  │        │
+     primary      │        │  mobile datasource + REST
+     datasource   ▼        ▼
+          ┌──────────┐   ┌───────────────────────────┐
+          │  mysql   │   │  mobile team's MySQL / API │
+          │ (web db) │   │  (host:3307 / host:8080)  │
+          └──────────┘   └───────────────────────────┘
 ```
 
-前端、后端、MySQL 都不直接对外暴露端口，只有 `gateway` 监听 80。这对应 backlog Item 29 里
-"Nginx 作为统一 API 网关"的要求，也是为什么两个 CI 流水线各自构建镜像、但只有 gateway 层
-需要在服务器上开放端口。
+The frontend, backend, and MySQL expose no ports to the outside world. Only
+`gateway` listens on 80 and 443, and port 80 permanently redirects to 443. This
+satisfies backlog Item 29 ("Nginx as a unified API gateway") and explains why both
+CI pipelines build their own images while only the gateway layer needs an open port
+on the server.
 
-### 本地运行
+### Technology stack
+
+| Layer | Choice |
+|---|---|
+| Backend | Spring Boot 4.0.7 / Java 21 / Spring Security + JWT (jjwt 0.12.6) / Spring Data JPA / Apache POI 5.3 / Lombok |
+| Frontend | React 18 / Vite 5 / react-router-dom 7 / axios / Chart.js 4 + react-chartjs-2 |
+| Database | MySQL 8.4 (tests run against H2 in-memory in MySQL compatibility mode) |
+| Gateway | Nginx 1.27-alpine, TLS 1.2/1.3 |
+| Orchestration & deployment | Docker Compose, DigitalOcean Ubuntu Droplet, build-on-server (no image registry) |
+| Quality & security | GitHub Actions + TruffleHog + CodeQL + Snyk + Trivy + OWASP ZAP + JaCoCo |
+
+### Two JPA datasources
+
+The backend mounts two datasources simultaneously. This is the single most important
+architectural detail to be aware of when working on this codebase.
+
+| Datasource | Config class | Owns |
+|---|---|---|
+| **primary** (web-owned database) | `PrimaryJpaConfig` | `BudgetConfig`, `DepartmentalBudget`, `ExpenseApprovalWorkflow`, `User`, and the two audit log tables |
+| **mobile** (the mobile team's database) | `MobileDataSourceConfig` | Only the `Approval` entity (trip approval table), plus a `JdbcTemplate` used to update the mobile `trips.status` column directly |
+
+Connecting straight to the mobile database rather than keeping a local copy was a
+deliberate team decision: trip approval state must be **one shared source of truth**
+so the web console and the mobile app always agree. A replicated copy drifted.
+
+Because two datasources are in play, Boot 4's auto-configuration cannot reliably
+resolve the `EntityManagerFactory` bean name, so the primary `DataSource`,
+`EntityManagerFactory`, and `TransactionManager` are all declared explicitly in
+`PrimaryJpaConfig` and annotated `@Primary`. Repository package scanning is scoped
+separately by `PrimaryJpaRepositoriesConfig` and `MobileJpaRepositoriesConfig` so the
+two never overlap.
+
+### Integration with the mobile backend
+
+Integration runs over **two channels** with different responsibilities:
+
+1. **Shared SQL** (the `mobile` datasource) — used only for trip approvals.
+   `ManagerService.decide()` writes the `approvals` table and flips `trips.status` in
+   the same database, so the mobile app's trip list reflects the decision immediately.
+2. **REST calls** (`integration/mobile/MobileExpenseClient`) — expense claims, user
+   profiles, and receipts. Mobile endpoints consumed: `GET /api/admin/expenses`,
+   `GET /api/admin/trips`, `GET /api/users/{id}`, and
+   `POST /api/admin/expenses/{approve|reject|request-info}`.
+
+Both systems **share the same `JWT_SECRET`**, so the web tier can mint tokens the
+mobile tier trusts. `MobileAuthTokenProvider` issues two distinct kinds of token, and
+the difference matters:
+
+- `currentUserTokenForMobile()` — carries the identity and role of the logged-in web
+  user (web roles map to mobile roles: `FINANCE_STAFF → FINANCE`, others unchanged).
+  Used for actions taken on a user's behalf.
+- `serviceAccountTokenForMobile()` — a dedicated service account,
+  `web-integration-service`, with the MANAGER role on the mobile side. This is
+  **required**, not a convenience: the mobile `getUserById()` endpoint resolves the JWT
+  subject back to a real mobile user record, and web users have no mobile account. The
+  `@Scheduled(fixedRate = 60000)` auto-sync job in `ManagerService` also runs with no
+  logged-in user context at all.
+
+Enum values deliberately mirror the mobile side so neither team has to translate names:
+`ReimbursementStatus` (SUBMITTED / APPROVED / REJECTED / NEEDS_INFO) and
+`ReimbursementCategory` (FLIGHT / HOTEL / MEAL / TRANSPORT / OTHER).
+**The mobile tier is always the authoritative source for expense data** — the web tier
+neither persists nor caches it.
+
+### Same-origin receipt proxy
+
+Mobile returns `receiptUrl` values shaped like
+`/uploads/receipts/2026-08-13/xxx.png`. `FinanceServiceImpl.buildFullReceiptUrl()`
+rewrites these to `/mobile-uploads/...`, and the gateway's `location /mobile-uploads/`
+block reverse-proxies them to `${MOBILE_UPSTREAM}/uploads/`. The browser therefore
+stays same-origin throughout, and the mobile tier's internal address and port are never
+exposed to the client.
+
+### Role-based access control
+
+There are exactly three roles: `ADMIN`, `FINANCE_STAFF`, `MANAGER`
+(`entity/Role.java`). `SecurityConfig` authorizes by path prefix, sessions are
+STATELESS, and `JwtAuthenticationFilter` parses the token ahead of
+`UsernamePasswordAuthenticationFilter`.
+
+| Path prefix | Allowed roles |
+|---|---|
+| `/api/auth/**`, `/api/health` | public |
+| `/api/admin/**` | ADMIN |
+| `/api/finance/**` | ADMIN, FINANCE_STAFF, MANAGER |
+| `/api/manager/**` | ADMIN, MANAGER |
+| all other `/api/**` | any authenticated user |
+
+The frontend mirrors this with route-level guards in `ProtectedRoute`, but **the server
+is the only authority on permissions**.
+
+### Data encryption (Item 26)
+
+- **In transit** — TLS 1.2/1.3 at the gateway; the backend's JDBC URL enables
+  `useSSL=true&requireSSL=true`.
+- **At rest** — `EncryptionService` uses AES-256-GCM. Every encryption generates a
+  random 12-byte IV, prepends it to the ciphertext, and Base64-encodes the result, so
+  identical plaintexts always produce different ciphertexts. Encryption and decryption
+  are transparent at the field level through a JPA `AttributeConverter`
+  (`EncryptedStringConverter`); encrypted columns are declared as `TEXT`.
+- **Queryability** — an encrypted `User.email` cannot be matched by equality, so an
+  additional `email_hash` column (SHA-256 hex, unique index) is persisted. Login and
+  identity lookups go through that column.
+- **Migrating existing data** — `DataEncryptionMigration` (prod profile only) re-saves
+  existing plaintext records at startup to trigger encryption. The converter falls back
+  to returning the raw value when decryption fails, so nothing breaks mid-migration. The
+  job is idempotent, keyed on whether any user already has an `emailHash`.
+
+---
+
+## 2. Running locally
 
 ```bash
-cp .env.example .env   # 按需修改 DB 密码、JWT_SECRET
+cp .env.example .env   # edit as needed — see the table below
 docker compose up --build
 ```
 
-- 浏览器打开 `http://localhost` → 走 gateway → 前端
-- `http://localhost/api/health` → 走 gateway → 后端健康检查
+- Open `https://localhost` → gateway → frontend (a self-signed certificate will
+  trigger a browser warning; this is expected)
+- `https://localhost/api/health` → gateway → backend health check
 
-### 两条独立的 CI/CD 流水线
-
-前后端各自一条流水线，按各自目录或 `docker-compose.yml` 的变更触发。部署 job 会串行执行，
-避免两条流水线同时在同一台服务器执行 `git pull` 和 Docker Compose：
-
-| | 前端 `ci-frontend.yml` | 后端 `ci-backend.yml` |
-|---|---|---|
-| build-and-test | npm ci → lint → format → vitest → vite build | mvn test（H2） → mvn package |
-| security-scan | SonarQube（JS/TS）+ Snyk（npm 依赖） | SonarQube（Java，含 JaCoCo 覆盖率）+ Snyk（Maven 依赖） |
-| docker-build | 验证 `expense-hub-web` Docker 镜像可构建 | 验证 `expense-hub-backend` Docker 镜像可构建 |
-| deploy | SSH 到服务器，拉取代码后执行 `docker compose up -d --build web-frontend` | SSH 到服务器，拉取代码后执行 `docker compose up -d --build web-backend` |
-
-此项目采用“服务器本地构建”部署方式，不推送镜像到 Docker Registry，因此**不需要**
-`REGISTRY_URL`、`REGISTRY_USERNAME` 或 `REGISTRY_PASSWORD`。服务器上的 `/opt/expense-hub`
-必须是仓库的 `main` 分支工作副本且具备 `git pull` 权限；生产环境变量应在服务器本地的 `.env`
-中配置。GitHub 只需配置部署用的 `DEPLOY_HOST`、`DEPLOY_USER` 和 `DEPLOY_SSH_KEY`（以及启用
-Snyk 扫描时的 `SNYK_TOKEN`）。
-
-两条流水线都遵循 backlog Item 28 的验收标准：**任何一步失败（构建/测试失败，或 SonarQube/Snyk
-发现 high/critical 级别问题）都会让对应 job 失败**。要让这个红叉真正拦住合并，需要在 GitHub
-仓库 Settings → Branches 的分支保护规则里，把两条流水线的 `build-and-test` 和 `security-scan`
-都设为 required status checks——这一步必须手动配置一次，workflow 文件本身做不到。
-
-### 关于 SonarQube（暂时跳过）
-
-两条流水线的 `security-scan` job 里，SonarQube 步骤加了 `if: ${{ secrets.SONAR_TOKEN != '' && secrets.SONAR_HOST_URL != '' }}` 判断：只要 `SONAR_TOKEN`/`SONAR_HOST_URL` 这两个 Secret 没配，这两步会被跳过（显示灰色 skipped，不是失败），job 里的 Snyk 扫描仍然正常跑，不影响构建镜像和部署。等以后 SonarQube 服务器就绪、把这两个 Secret 填进仓库设置后，扫描会自动开始生效，**不需要再改 workflow 文件**。
-
-
-
-## WEB Backend
-
-Spring Boot 后端骨架，对应 backlog 中 User Management（Item 1-3）+ Web Application（Item 15-20）
-两个 epic 的技术栈：Spring Boot + Spring Security + JWT + RBAC + MySQL。
-
-### 已经搭好的部分
-
-- **鉴权骨架**：`POST /api/auth/login`，JWT 签发/校验，5 次失败锁定账号（对应 Item 1 验收标准）
-- **RBAC**：`SecurityConfig` 里按路径前缀区分 `ADMIN` / `FINANCE_STAFF` / `MANAGER` 角色（对应 Item 27）
-- **管理员账号管理骨架**：`GET/PATCH /api/admin/users/**`（对应 Item 2，字段和校验待补充）
-- **健康检查**：`GET /api/health`，供 Docker healthcheck 和网关探测使用
-- **统一异常处理**：`GlobalExceptionHandler` 返回结构化 JSON 错误体
-- **测试**：用 H2 内存数据库跑 `test` profile，不依赖真实 MySQL 也能在 CI 里跑单元/集成测试
-
-### 本地开发
+Generate a self-signed certificate with:
 
 ```bash
-# 需要本地起一个 MySQL，或者直接用根目录 docker-compose 里的 mysql 服务
-export DB_HOST=localhost DB_PORT=3306 DB_NAME=expense_hub DB_USERNAME=root DB_PASSWORD=xxx
-export JWT_SECRET=any-random-string-at-least-32-characters-long
-mvn spring-boot:run
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout gateway/certs/privkey.pem -out gateway/certs/fullchain.pem \
+  -subj "/CN=localhost"
 ```
 
-提交前本地跑一遍和 CI 一致的检查：
+### Environment variables
 
-```bash
-mvn test              # 单元/集成测试（H2，不需要真实数据库）
-mvn package            # 打包，确认无编译错误
-```
+| Variable | Notes |
+|---|---|
+| `DB_NAME` / `DB_USERNAME` / `DB_PASSWORD` / `DB_ROOT_PASSWORD` | Web-owned MySQL |
+| `JWT_SECRET` | **Required**, 32+ characters. Must match the mobile tier's value or cross-system calls are rejected |
+| `ENCRYPTION_SECRET` | **Required**, Base64-encoded 32-byte key (`openssl rand -base64 32`). Losing it makes already-encrypted data unrecoverable |
+| `MOBILE_API_BASE_URL` | **Required**, address of the mobile REST service |
+| `MOBILE_UPSTREAM` | **Required**, `host:port` (no scheme) the gateway proxies receipt images to |
+| `MOBILE_DB_URL` / `MOBILE_DB_USERNAME` / `MOBILE_DB_PASSWORD` | Mobile MySQL (defaults to `host.docker.internal:3307`) |
+| `SEED_DEMO_USERS` | Demo data toggle |
 
-VS Code 里装 **Extension Pack for Java** + **Spring Boot Extension Pack** 就能获得和 IntelliJ 类似的
-调试、断点、Bean 依赖图等能力。
+The `web-backend` and `gateway` services use `${VAR:?...}` syntax for required values,
+so a missing variable fails the container at startup rather than letting it run with a
+bad configuration.
 
-### 目录结构
+Demo credentials live in `TEST_ACCOUNTS.md` (`UserDataSeeder` only activates under the
+`dev` profile, and that file is the source of truth for the values). Five consecutive
+failed logins lock an account; an admin can release it via
+`POST /api/admin/users/{id}/unlock`.
+
+---
+
+## 3. Two independent CI/CD pipelines
+
+One pipeline each for frontend and backend, triggered by changes to their own directory
+or to `docker-compose.yml` (PRs targeting `main`/`develop`, pushes to `main`). Both
+`deploy` jobs share the `concurrency: expense-hub-production` group so they run
+serially, never racing each other on `git pull` and `docker compose up` on the same
+server.
+
+### The five stages
+
+| Stage | Job | Frontend | Backend |
+|---|---|---|---|
+| 1 Build & test | `build-and-test` | npm ci → ESLint → Prettier check → Vitest + coverage → vite build | `mvn test` (H2, `test` profile) → `mvn package` → JaCoCo report |
+| 2a Secret scanning | `secret-scan` | TruffleHog with `fetch-depth: 0` — scans **all history**, not just the diff; `fail: true` | same |
+| 2b SAST | `codeql` | CodeQL (javascript-typescript) | CodeQL (java-kotlin; needs `mvn compile` first to analyze bytecode) |
+| 2c Dependency CVEs | `dependency-scan` | Snyk (npm, `--severity-threshold=high`) | Snyk CLI (`pom.xml`, same threshold) |
+| 3 Image build & scan | `docker-build` | build image, then Trivy scan; CRITICAL findings set `exit-code: 1` | same, but scoped to `vuln-type: os` |
+| 5 DAST | `dast` | run the container, then OWASP ZAP baseline scan against the live static site (security headers, cookie flags, information disclosure) | run the container plus a throwaway MySQL; ZAP probes `/api` as a black box |
+| 4 Deploy | `deploy` | SSH → `git pull --ff-only` → `docker compose up -d --build web-frontend` | same, with `web-backend` |
+
+(Stage numbers follow the comments in the workflow files. The actual dependency order
+is `deploy` **needs** `dast`, meaning DAST runs *before* deployment — this was the point
+of commit `e40a53f`: make every security check a release gate.)
+
+### Why the scanners don't overlap
+
+Responsibilities are split deliberately, to avoid both duplicate noise and blind spots:
+
+- **Snyk** owns application dependency CVEs — it reads `pom.xml` and `package.json`,
+  covering Java libraries and npm packages.
+- **Trivy** scans only the container image's **OS packages** (the backend sets
+  `vuln-type: os` explicitly) and never looks at JARs.
+- **CodeQL** analyzes **first-party code** for injection, broken access control, unsafe
+  API usage, and similar issues. It does not examine dependencies.
+- **TruffleHog** looks for **credentials in commit history**, an entirely different
+  dimension from the other three.
+
+Trivy results are uploaded as SARIF to the GitHub Security tab, and the vulnerability
+database is cached so it isn't re-downloaded on every run.
+
+### Required status checks
+
+A failing step turns the corresponding job red, but **a red cross does not block a merge
+by itself**. To make it actually gate a PR, the following must be configured once by
+hand under Settings → Branches → Branch protection rules, for both pipelines:
+`build-and-test`, `secret-scan`, `codeql`, and `dependency-scan` set as required status
+checks. The workflow files cannot do this themselves.
+
+### Deployment secrets
+
+The project builds on the server and pushes nothing to an image registry, so no
+`REGISTRY_*` variables are needed. Only these are required: `DEPLOY_HOST`,
+`DEPLOY_USER`, `DEPLOY_SSH_KEY`, and `SNYK_TOKEN`.
+
+The deployment directory on the server must be a working copy of this repository's
+`main` branch with permission to `git pull`. Production environment variables belong in
+a `.env` file on the server itself.
+
+---
+
+## 4. Web Backend
+
+### Directory layout
 
 ```
 src/main/java/com/expensehub/webbackend/
-  config/       Spring Security、CORS 等配置
-  security/     JwtUtil、JwtAuthenticationFilter
-  controller/   REST 接口
-  service/      业务逻辑接口与实现
-  entity/       JPA 实体
-  repository/   Spring Data JPA repository
-  dto/          请求/响应 DTO
-  exception/    自定义异常 + 全局异常处理
+  config/               Security, CORS, dual datasources, RestClient, scheduling,
+                        data seeders, encryption migration
+  security/             JwtUtil, JwtAuthenticationFilter, EncryptionService,
+                        EncryptedStringConverter, HashUtil
+  controller/           REST endpoints (8 controllers)
+  service/              Business logic; implementations under impl/
+  entity/               Primary-datasource JPA entities and enums
+  repository/           Primary-datasource Spring Data JPA repositories
+  mobile/entity/        Mobile-datasource entity (Approval only)
+  mobile/repository/    Mobile-datasource repository
+  integration/mobile/   Mobile REST client, DTOs, token provider, exceptions
+  dto/                  Request/response DTOs (mostly records)
+  exception/            Custom exceptions + GlobalExceptionHandler (structured JSON errors)
 ```
 
+### Main endpoints
 
+| Module | Endpoints | Backlog |
+|---|---|---|
+| Authentication | `POST /api/auth/login` | 1 |
+| Health check | `GET /api/health` | — |
+| Account management | `GET/POST /api/admin/users`, `PUT /{id}`, `PATCH /{id}/status`, `POST /{id}/unlock` | 2 |
+| Budget configuration | `GET/PUT /api/finance/budgets`, `GET /budgets/{id}/audit` | 16 |
+| Reimbursement review | `GET /api/finance/reimbursements` (paged, multi-filter), `GET /{id}`, `PATCH /{id}/review`, `GET /{id}/audit` | 17, 19 |
+| Excel export | `GET /api/finance/reimbursements/export` | 18 |
+| Trip approvals | `GET /api/manager/approvals/{pending,history}`, `POST /{id}/{approve,reject}` | 20 |
+| Over-budget expense approvals | `GET /api/manager/expense-approvals/{pending,history}`, `POST /{id}/{approve,reject}`, `GET /{id}/decision` | 20 |
+| Trip budget caps | `GET/POST /api/manager/budgets`, `PUT /{id}` | 20 |
+| Analytics | `GET /api/analytics/{department-expenses,travel-frequency,budget-alerts,expense-categories,monthly-trend,approval-outcomes}` | 23–25 |
 
-## Web Frontend
+> ⚠️ **There are two "budget" concepts and two "approval" concepts. The names are
+> similar; the semantics are not:**
+> - `/api/finance/budgets` (`BudgetConfig`, Item 16) — reimbursement spending budget,
+>   quarterly or annual, drives the `OVER_BUDGET` policy flag.
+> - `/api/manager/budgets` (`DepartmentalBudget`, Item 20) — annual departmental cap
+>   used for trip pre-approval.
+> - `/api/manager/approvals` — approval of employees' **trip requests** (data lives in
+>   the mobile `approvals` table).
+> - `/api/manager/expense-approvals` — manager sign-off required *before* finance review
+>   when a **claim exceeds budget** (data lives in the web `expense_approval_workflow`
+>   table).
 
-Web 端前端框架骨架（React + Vite）。当前已完成功能模块占位页面、基础导航与 API 文件骨架，尚未接入真实业务逻辑。
+### Reimbursement review flow (Items 17 / 19 / 20)
 
-### 已经搭好的前端骨架
+```
+Mobile /api/admin/expenses
+        │  MobileExpenseClient.listAllExpenses()
+        ▼
+FinanceServiceImpl.fetchResolvedExpenses()      ← resolve submitter's department (cached)
+        │
+        ├─▶ ExpenseApprovalWorkflowService       ← decide if manager sign-off is needed
+        │        needsManagerApproval = OVER_BUDGET flag present
+        │        readyForFinance = !needsManagerApproval || managerApproved
+        │
+        ├─▶ ReimbursementPolicyEngine.evaluate() ← produce policy flags
+        │        MISSING_RECEIPT / OVER_PER_DIEM / OVER_BUDGET
+        │
+        └─▶ only readyForFinance records reach the finance list and the export
+                 │
+                 ▼  PATCH /review
+        MobileExpenseClient.{approve,reject,requestInfo}
+                 │
+                 ▼
+        ReimbursementAuditLog (web-side trail)
+```
 
-- **基础布局与导航**：`src/components/layout/BasicLayout.jsx`
-- **功能模块占位页面**：
-  - `src/pages/AuthAccountCreationPage.jsx`
-  - `src/pages/AdminAccountManagementPage.jsx`
-  - `src/pages/FinanceReimbursementPage.jsx`
-  - `src/pages/ManagerApprovalsPage.jsx`
-  - `src/pages/AnalyticsOverviewPage.jsx`
-- **API 占位文件**：
-  - `src/api/authApi.js`
-  - `src/api/adminAccountsApi.js`
-  - `src/api/financeApi.js`
-  - `src/api/managerApi.js`
-  - `src/api/analyticsApi.js`
+Per-diem limits (`ReimbursementPolicyEngine`): MEAL 75, HOTEL 300, TRANSPORT 100,
+FLIGHT 1500, OTHER 150. Budget periods are resolved uniformly through
+`BudgetPeriodResolver` (quarter labels like `2026-Q3`, annual labels like `2026`), with
+quarterly taking priority over annual. When neither is configured, that means "no limit
+set" rather than "a limit of zero" — a rule owned solely by `BudgetLookupService` and
+shared by the approval and analytics modules so the two never drift into separate
+implementations.
 
-### 当前路由（占位）
+### Audit logging (Item 27)
 
-| 路由 | 页面 |
-|---|---|
-| `/` | Dashboard |
-| `/accounts/create` | 账号创建与角色权限 |
-| `/admin/accounts` | 管理员账号管理 |
-| `/finance/reimbursements` | 财务报销流程 |
-| `/manager/approvals` | 经理审批中心 |
-| `/analytics` | 数据分析与可视化 |
+Two separate tables: `BudgetAuditLog` records budget amount changes (previous value,
+new value, actor, timestamp), and `ReimbursementAuditLog` records every action taken on
+a claim (`REVIEW_*`, `MANAGER_APPROVE`, `MANAGER_REJECT`). The actor is always derived
+from the JWT identity and never from a client-supplied id — as the comment on
+`ManagerController.currentUserId()` explains, trusting a `managerId` in the request body
+would let any authenticated caller attribute a decision to someone else.
 
-### 本地开发
+### Local development
 
 ```bash
-npm install
-npm run dev        # 启动开发服务器，默认代理 /api 到本地后端
+# Requires a local MySQL, or just use the mysql service from the root docker-compose
+export DB_HOST=localhost DB_PORT=3306 DB_NAME=expense_hub DB_USERNAME=root DB_PASSWORD=xxx
+export JWT_SECRET=any-random-string-at-least-32-characters-long
+export ENCRYPTION_SECRET=$(openssl rand -base64 32)
+export MOBILE_API_BASE_URL=http://localhost:8080
+mvn spring-boot:run
 ```
 
-在提交代码前，本地先跑一遍和 CI 完全一致的检查，避免 PR 被拦：
+Run the same checks CI runs before you push:
 
 ```bash
-npm run lint            # ESLint
-npm run format:check    # Prettier 格式检查
-npm run test:coverage   # Vitest 单元测试 + 覆盖率
-npm run build           # 生产构建，确认无报错
+mvn test       # unit/integration tests (H2; both datasources point at in-memory DBs)
+mvn package    # package, confirming there are no compilation errors
 ```
 
-VS Code 打开本项目后，会提示安装 `.vscode/extensions.json` 里的推荐插件（ESLint、Prettier、
-SonarLint、Docker、Vitest）。`.vscode/settings.json` 已配置保存时自动格式化 + 自动修复 lint 问题，
-这样写代码时就能实时看到 CI 会报错的地方，而不是等 PR 跑完流水线才发现。
+Installing **Extension Pack for Java** and **Spring Boot Extension Pack** in VS Code
+gives you debugging, breakpoints, and bean dependency graphs comparable to IntelliJ.
 
-### CI/CD 流水线做了什么（仓库根目录 `.github/workflows/ci-frontend.yml`）
+### Docker
 
-| Job                 | 触发条件                        | 作用                                                         |
-| ------------------- | ------------------------------- | ------------------------------------------------------------ |
-| `build-and-test`    | 相关文件的 PR + push to main    | 装依赖、lint、格式检查、单元测试+覆盖率、生产构建            |
-| `security-scan`     | 依赖上一步                      | SonarQube 代码质量扫描 + Snyk 依赖漏洞扫描（high/critical 直接失败） |
-| `docker-build`      | 仅 push to main，且前两步通过   | 验证 Docker 镜像能够构建                                     |
-| `deploy`            | 仅 push to main，且镜像构建成功 | SSH 到服务器，拉取代码后运行 `docker compose up -d --build <service>` |
+Multi-stage build: `maven:3.9-eclipse-temurin-21` compiles, `eclipse-temurin:21-jre-alpine`
+runs. The runtime stage applies `apk upgrade` for OS patches, creates a non-root `spring`
+user to run the process, defines a `/api/health` HEALTHCHECK, and sets
+`MaxRAMPercentage=50` so the JVM respects the container memory limit.
 
-这对应 backlog 里 Item 28 的验收标准：**任何一步失败（构建失败、测试不过、或 Sonar/Snyk 发现
-high/critical 漏洞）都会让对应 job 标红，从而阻止合并**——前提是需要在 GitHub 仓库设置里把
-`build-and-test` 和 `security-scan` 设为该分支的 **required status checks**（Settings → Branches →
-Branch protection rules），否则红叉只是提示，不会真正拦截合并。
+---
 
+## 5. Web Frontend
 
-
-### 目录结构
+### Directory layout
 
 ```
 src/
-  api/          axios 客户端 + 各模块 API 占位文件
-  components/   基础布局组件（含导航）
-  pages/        Dashboard / 各角色功能占位页面
-  styles/       全局样式
-tests/          Vitest 单元测试
+  api/          axios client (JWT injection + 401 interception) and per-module APIs
+  components/   BasicLayout (role-aware navigation), ProtectedRoute
+  pages/        Login / Dashboard / per-role feature pages / 404
+  charts/       Chart.js components and chartSetup
+  mocks/        Mock data for local development
+  utils/        auth (token and role storage), insights
+  styles/       Global styles and theme
+tests/          Vitest unit tests
 ```
 
+### Routes
+
+| Route | Page | Allowed roles |
+|---|---|---|
+| `/login` | Login | public |
+| `/` | Dashboard | any authenticated user |
+| `/admin/accounts` | Admin account management | ADMIN |
+| `/admin/accounts/create` | Account creation and role assignment | ADMIN |
+| `/finance/reimbursements` | Reimbursement review and export | ADMIN, FINANCE_STAFF |
+| `/manager/approvals` | Trip request approvals | ADMIN, MANAGER |
+| `/manager/expense-approvals` | Over-budget expense approvals | ADMIN, MANAGER |
+| `/analytics` | Analytics and visualization | any authenticated user |
+| `*` | 404 | — |
+
+The axios instance in `api/client.js` injects the `Authorization` header from
+`localStorage` on every request, and on a 401 it clears local credentials and redirects
+to `/login`.
+
+### Local development
+
+```bash
+npm install
+npm run dev        # dev server; /api proxies to http://localhost:8081 by default
+```
+
+Run the same checks CI runs before you push, so PRs don't get blocked:
+
+```bash
+npm run lint            # ESLint (--max-warnings 0)
+npm run format:check    # Prettier
+npm run test:coverage   # Vitest + coverage
+npm run build           # production build
+```
+
+Opening the project in VS Code prompts you to install the recommended extensions from
+`.vscode/extensions.json` (ESLint, Prettier, Docker, Vitest). Format-on-save and
+auto-fix are preconfigured, so you see what CI would flag while you write rather than
+after the pipeline runs.
+
 ### Docker
+
+Multi-stage build: `node:20-alpine` compiles the static assets, and only the output is
+packaged into `nginx:1.27-alpine` — small image, small attack surface. `nginx.conf`
+already handles the React Router client-side fallback.
 
 ```bash
 docker build -t expense-hub-web .
 docker run -p 8081:80 expense-hub-web
 ```
 
-生产镜像是多阶段构建：`node:20-alpine` 编译静态资源，最终只打包进 `nginx:1.27-alpine`，体积小、
-攻击面也小（这点 Snyk 扫描镜像时也会更容易过）。`nginx.conf` 里已处理好 React Router 的前端路由回退。
+---
+
+## 6. Known issues and follow-up work
+
+- **Item 3 (password reset by email)** has not been started.
+- **Over-budget detection has two inconsistent implementations.**
+  `FinanceServiceImpl.computeFlags()` sums the department's spend across the whole
+  budget period, while `ExpenseApprovalWorkflowService.calculateFlags()` currently
+  compares a single claim against the budget (its own comments mark this as
+  simplified). These need to converge.
+- **The reimbursement list filters, sorts, and pages in memory** (`PageImpl` +
+  `subList`). This follows from the authoritative data living behind a mobile REST API
+  rather than in a local table, but it will need server-side paging or a local
+  projection table as volume grows.
+- `ExpenseApprovalWorkflow.department` has field-level encryption applied while also
+  being used for equality queries and indexed. AES-GCM is non-deterministic, so this
+  needs review — `BudgetConfig` already dropped encryption on that field in commit
+  `9e19033`.
+- The self-signed certificates under `gateway/certs/` **should not be committed to
+  version control**. Production should use a real certificate, and the private key
+  should be removed from the repository history.
+- CORS is currently `allowedOriginPatterns("*")` with `allowCredentials(true)`. This
+  should be narrowed to specific origins before production use.
