@@ -220,14 +220,13 @@ jobs:
 
   # ============================================================
   # Stage 5: DAST — Dynamic Application Security Testing (OWASP ZAP)
-  # The frontend image is a static React site served by nginx. We build
-  # it, run it in the runner, wait for it to serve, then run a ZAP
-  # baseline scan against the live site. This catches runtime-only issues
-  # a static site still has: missing security headers (CSP, X-Frame-
-  # Options, X-Content-Type-Options), cookie flags, and info disclosure.
+  # The frontend image is a static React site served by nginx. Build it,
+  # run it, wait for it to serve, then run a ZAP baseline scan against the
+  # live site. Catches runtime-only issues a static site still has:
+  # missing security headers (CSP, X-Frame-Options, X-Content-Type-
+  # Options), cookie flags, and information disclosure.
   #
-  # Runs after deploy and is non-blocking: baseline findings are for
-  # review, they do not gate the pipeline.
+  # Non-blocking: baseline findings are for review, not a gate.
   # ============================================================
   dast:
     name: DAST (OWASP ZAP Baseline)
@@ -240,8 +239,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Build the same image the pipeline ships, so the scanned site is
-      # byte-identical to production.
       - name: Build frontend image
         uses: docker/build-push-action@v6
         with:
@@ -268,13 +265,14 @@ jobs:
           exit 1
 
       - name: OWASP ZAP Baseline Scan
+        continue-on-error: true
         uses: zaproxy/action-baseline@v0.12.0
         with:
           target: 'http://localhost:8080/'
-          # -I => report warnings without failing the job (baseline finds many
-          # by design). Reports are still produced and uploaded.
-          cmd_options: '-I'
+          # fail_action:false => warnings are reported but do NOT fail the job.
+          # allow_issue_writing:false => don't auto-open GitHub issues.
           fail_action: false
+          allow_issue_writing: false
 
       - name: Show frontend logs (always)
         if: always()
