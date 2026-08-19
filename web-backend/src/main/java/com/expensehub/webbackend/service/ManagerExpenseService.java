@@ -75,6 +75,16 @@ public class ManagerExpenseService {
      * Finance will review and make final decision.
      */
     public void approveExpense(Long expenseId, Long managerId, String note) {
+        // Guard against double-approval (e.g. after a TRUNCATE/rebuild the
+        // workflow row is recreated without the manager decision, so the
+        // expense reappears in the pending queue and can be approved again,
+        // producing duplicate MANAGER_APPROVE audit entries with later timestamps).
+        workflowService.getWorkflowForExpense(expenseId).ifPresent(w -> {
+            if (Boolean.TRUE.equals(w.getManagerApproved())) {
+                throw new IllegalStateException(
+                    "Expense " + expenseId + " has already been approved by a manager.");
+            }
+        });
         workflowService.updateManagerApproval(expenseId, managerId, note);
         logAudit(expenseId, "MANAGER_APPROVE", managerId, note);
     }

@@ -171,6 +171,19 @@ public class ExpenseApprovalWorkflowService {
         boolean needsManagerApproval,
         BigDecimal overBudgetAmount
     ) {
+        // Once a manager has made a decision (approved or rejected), budget
+        // recalculation must not reverse it. The manager acted on the state at
+        // the time of review; silently flipping readyForFinance back to false
+        // would block Finance Staff from acting on an already-approved expense.
+        // The over-budget amount can still be updated for informational display.
+        if (existing.getManagerApproved() != null) {
+            if (!sameAmount(overBudgetAmount, existing.getOverBudgetAmount())) {
+                existing.setOverBudgetAmount(overBudgetAmount);
+                return workflowRepository.save(existing);
+            }
+            return existing;
+        }
+
         boolean changed = false;
 
         if (!Boolean.valueOf(needsManagerApproval).equals(existing.getNeedsManagerApproval())) {
@@ -178,9 +191,6 @@ public class ExpenseApprovalWorkflowService {
             changed = true;
         }
 
-        // Also handles the null transition (was over budget, now isn't), which
-        // the previous `overBudgetAmount != null` guard silently skipped and
-        // left a stale figure on the row.
         if (!sameAmount(overBudgetAmount, existing.getOverBudgetAmount())) {
             existing.setOverBudgetAmount(overBudgetAmount);
             changed = true;
