@@ -180,6 +180,7 @@ public class FinanceServiceImpl implements FinanceService {
         return all.stream()
                 .filter(r -> department.equalsIgnoreCase(r.department()))
                 .filter(r -> r.status() != ReimbursementStatus.REJECTED)
+                .filter(r -> r.status() != ReimbursementStatus.NEEDS_INFO)
                 .filter(r -> r.submittedAt() != null)
                 .filter(r -> withinRange(r.submittedAt().toLocalDate(), from, to))
                 .map(ResolvedExpense::amount)
